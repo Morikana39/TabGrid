@@ -258,3 +258,13 @@ html.menu-open .card button:hover { background: transparent; color: inherit; }
 #thumbnail-tour h2 { margin: 0 0 16px; }
 #thumbnail-tour p { margin: 0 0 16px; line-height: 1.5; }
 #thumbnail-tour .section-note { font-size: .9em; }
+
+.group-preview[data-layout=split] { grid-template-rows: minmax(0,1fr); }
+.group-preview[data-layout=featured] { grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); }
+.group-preview[data-layout=featured] > :first-child { grid-row: span 2; }
+#context-submenu.layout-submenu { width: 236px; }
+#context-submenu.layout-submenu > .menu-scroll { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding: 4px; }
+#context-submenu.layout-submenu button { padding: 6px; text-align: center; display: flex; flex-direction: column; }
+#context-submenu.layout-submenu button[aria-checked=true] { background: var(--selected); box-shadow: inset 0 0 0 1px var(--accent); }
+.layout-sample.group-preview { width: 100%; height: 42px; gap: 3px; }
+#context-submenu .layout-sample .group-tile { background: var(--accent); opacity: .65; border-radius: 2px; }

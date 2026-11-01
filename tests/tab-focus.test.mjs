@@ -90,3 +90,35 @@ test('Undo activation events cannot replace the previously opened tab or group a
         assert.equal((await f.actions.lastOpenedSnapshot())[1],`tab:${restored.id}`);
     }
 });
+
+test('group layouts reserve their last tile for the remaining count only when enabled',()=>{
+    const members=Array.from({length:6},(_,index)=>({id:index+1,index}));
+    for(const capacity of [2,3,4]){
+        const tiles=groupPreviewTiles(members,null,{capacity});
+        assert.equal(tiles.length,capacity);
+        assert.equal(tiles.at(-1).remaining,7-capacity);
+        assert.deepEqual(groupPreviewTiles(members,null,{capacity,overflow:false}).map(tile=>tile.tab.id),members.slice(0,capacity).map(tab=>tab.id));
+        assert.equal(groupPreviewTiles(members.slice(0,capacity),null,{capacity}).at(-1).tab.id,capacity);
+        assert.equal(groupPreviewTiles([],null,{capacity}).length,capacity);
+    }
+    assert.deepEqual(groupPreviewTiles(members,1,{capacity:2}),[{tab:members[1]},{remaining:4}]);
+});
+
+test('group thumbnail order follows each grid sort before overflow and exclusion',async()=>{
+    const {openItems}=await import('../lib/tab-model.mjs');
+    const members=[
+        {id:1,index:2,title:'Alpha',url:'https://z.example',lastAccessed:20},
+        {id:2,index:0,title:'Charlie',url:'https://a.example',lastAccessed:10},
+        {id:3,index:1,title:'Bravo',url:'https://m.example',lastAccessed:30}
+    ].map(tab=>({...tab,windowId:1,groupId:7}));
+    const original=structuredClone(members);
+    for(const [sort,expected] of Object.entries({default:[2,3,1],title:[1,3,2],domain:[2,3,1],accessed:[3,1,2]})){
+        assert.deepEqual(groupPreviewTiles(members,null,{sort,capacity:3}).map(tile=>tile.tab.id),expected);
+        assert.deepEqual(openItems(members,[],{windowId:1,groupId:7,sort}).map(item=>item.tab.id),expected);
+        const overflow=groupPreviewTiles(members,null,{sort,capacity:2});
+        assert.equal(overflow[0].tab.id,expected[0]);assert.equal(overflow[1].remaining,2);
+        assert.deepEqual(groupPreviewTiles(members,null,{sort,capacity:2,overflow:false}).map(tile=>tile.tab.id),expected.slice(0,2));
+        assert.deepEqual(groupPreviewTiles(members,expected[0],{sort,capacity:2}).map(tile=>tile.tab.id),expected.slice(1));
+    }
+    assert.deepEqual(members,original);
+});

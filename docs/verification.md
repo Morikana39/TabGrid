@@ -1302,3 +1302,23 @@ Final checks: `npm run check`, `npm test` (204/204 passing), and `git diff --che
 - Re-ran all 315 automated tests, JavaScript/module checks, and whitespace checks successfully.
 - Rebuilt the 115-file runtime ZIP (965354 bytes). Verified ZIP integrity, required files, portable paths, locale/license inclusion, and byte-for-byte inclusion of the updated grid, session actions, thumbnail updater, and window lifecycle modules. Development tests are excluded.
 - This refresh retains the v1.1.0 version and tag. The GitHub release notes identify the source commit used for the replacement asset.
+
+## Returning-card drag lock (2026-11-01)
+
+- Cards returning to their grid slot reject new Sortable drags and mouse swipes until their return animation finishes. Short/cancelled swipe returns use the same per-card lock. Other cards remain available.
+- Completion releases the lock; an interrupted-animation fallback also clears it. Motion-off and reduced-motion swipe returns settle immediately.
+- Validation: all 318 automated tests passed, along with syntax/module and whitespace checks. Added regressions for rejected repeat gestures, successful gestures after settling, interrupted-animation cleanup, and motion-off behavior.
+- Chrome UI fixture exercised the real Sortable handler with synthetic input: return lock present at release, immediate repeat drag rejected (no chosen/dragging/swipe state), zero surface-to-slot displacement after settling, and a subsequent drag accepted. No browser console errors were recorded. This was isolated fixture validation, not native physical mouse testing against live tabs.
+
+## Group thumbnail layouts (2026-11-01)
+
+- Main-grid group menus offer a compact visual submenu with Grid (four tiles), Side by side (two), and Featured (one large plus two small). Radio-menu semantics expose selection; existing arrow-key submenu navigation remains available. Layouts are stored per group in Chrome session storage, separated for regular/private contexts.
+- Previews & Storage now includes a default-on remaining-tab count switch. Overflow replaces the final tile only when the group exceeds the chosen layout's capacity. Turning it off shows a thumbnail in that slot instead. Labels are localized in English, Chinese, and Japanese.
+- All 319 automated tests and module/syntax checks pass. Chrome UI fixture verified both alternative layouts apply immediately, three tiles for Featured, the selected radio item, and the default-on switch. Visual inspection caught and corrected a glass-style override hiding the layout diagrams. Fixture storage resets on reload, so native session persistence was not tested in this preview.
+
+## GitHub refresh and Web Store preparation (2026-11-01)
+
+- Group thumbnail ordering shares the main grid comparator and follows Tab order, Title, Website, or Last used before applying capacity/overflow. Render signatures include sort and member activity/order changes.
+- All 320 tests, module/syntax checks, and whitespace checks passed. The rebuilt ZIP has 119 files / 985317 bytes; its entries match source files, required icons have exact square dimensions, and development fixtures are excluded.
+- Removed unused `history` permission after checking runtime API calls; Recently closed continues to use `sessions`. Added 16/32/48/128 pixel icons with transparent padding.
+- Prepared PRIVACY.md and docs/store/release-preparation.md with localized listing copy, permission justifications, reviewer steps, and explicit pending screenshot/console requirements. Developer-console browser access returned “Not allowed”; no console changes or store publication were performed.

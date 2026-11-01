@@ -18,6 +18,24 @@ async function drag(source,destination,{hold=300,travel=80,dwell=430,continueTo=
 }
 function add(name,work){const b=document.createElement('button');b.textContent=name;b.onclick=async()=>{b.disabled=true;try{await work();}catch(e){record({error:e.message});}finally{b.disabled=false;}};toolbar.append(b);}
 const card=key=>document.querySelector(`.grid-container > .card[data-key="${key}"]`);
+add('Probe return drag lock',async()=>{
+    const source=card('tab:2');source.scrollIntoView({block:'center'});await pause(80);
+    const start=center(source),end={x:start.x+40,y:start.y};
+    emit('down',start,source.querySelector('.card-open'));await pause(300);
+    emit('move',end,document);await pause(100);emit('move',end,document);await pause(60);
+    emit('up',end,document,0);
+    record({stage:'return-lock-start',locked:source.hasAttribute('data-card-return')});
+    emit('down',end,source.querySelector('.card-open'));await pause(300);
+    emit('move',{x:end.x+30,y:end.y},document);await pause(40);
+    record({stage:'return-lock-rejected',dragging:document.body.classList.contains('dragging'),chosen:source.classList.contains('sortable-chosen'),swipe:source.dataset.swipe||null});
+    emit('up',end,document,0);await pause(700);
+    const slot=source.getBoundingClientRect(),surface=source.querySelector('.card-surface').getBoundingClientRect();
+    record({stage:'return-lock-settled',locked:source.hasAttribute('data-card-return'),offset:Math.abs(slot.left-surface.left)+Math.abs(slot.top-surface.top)});
+    const again=center(source);emit('down',again,source.querySelector('.card-open'));await pause(300);
+    emit('move',{x:again.x+30,y:again.y},document);await pause(100);
+    record({stage:'return-lock-reenabled',dragging:document.body.classList.contains('dragging')});
+    emit('up',again,document,0);await pause(700);
+});
 add('Probe group',()=>drag(card('tab:2'),card('group:7')));
 add('Probe new group',()=>drag(card('tab:5'),card('tab:6')));
 add('Probe quick pass',()=>drag(card('tab:2'),card('group:7'),{dwell:80}));

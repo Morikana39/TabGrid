@@ -1,5 +1,12 @@
 // UI messages only; never translate user content.
 export default {
+  "Thumbnail layout": "缩略图布局",
+  "Grid": "网格",
+  "Side by side": "并排",
+  "Featured": "重点预览",
+  "Show remaining tab count in group previews": "在标签组预览中显示剩余标签数量",
+  "Group previews": "标签组预览",
+
   "Show me": "查看位置",
   "Got it": "知道了",
   "Excluded and Incognito tabs are skipped. Some Chrome pages need permission from clicking the extension icon on that page first. Enable tab previews in settings to use this feature.": "将跳过排除的网站和无痕标签页。部分 Chrome 页面需要先在该页面点击扩展图标以获得权限。请在设置中启用标签页预览以使用此功能。",

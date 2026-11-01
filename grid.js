@@ -1,6 +1,10 @@
+const GROUP_LAYOUTS = {grid:4, split:2, featured:3};
+let groupLayouts = {};
+const groupLayoutKey = id => `tabgridGroupLayout:${privateMode?'private':'regular'}:${id}`;
+const groupLayout = id => Object.hasOwn(GROUP_LAYOUTS,groupLayouts[groupLayoutKey(id)]) ? groupLayouts[groupLayoutKey(id)] : 'grid';
 import {mountThumbnailUpdate} from './lib/thumbnail-update-ui.mjs';
 import {mountNoticePopover} from './lib/notice-popover.mjs';
-import {createCardReturn} from './lib/card-return.mjs';
+import {createCardReturn,isCardReturning} from './lib/card-return.mjs';
 import { tr, currentLanguage, resolveLanguage, translateError } from './lib/i18n.mjs';
 import { createDragGrouping } from './lib/drag-grouping.mjs';
 import { mountCardSwipe, mouseSwipeEnabled } from './lib/card-swipe.mjs';
@@ -238,8 +242,9 @@ function createCard(item, scope) {
     if (item.kind === 'group') {
         card.style.setProperty('--group-color', colors[data.color]);
         preview.classList.add('group-preview');
+        preview.dataset.layout = groupLayout(data.id);
         preview.setAttribute('aria-hidden', 'true');
-        for (const tile of groupPreviewTiles(item.members,handoffPreview?.tabId)) {
+        for (const tile of groupPreviewTiles(item.members,handoffPreview?.tabId,{sort:$('sort-select').value,capacity:GROUP_LAYOUTS[groupLayout(data.id)],overflow:preferences.groupPreviewOverflow!==false})) {
             const cell = el('div', 'group-tile');
             if (tile.tab) {
                 const screenshot = state.screenshots[`screenshot_${tile.tab.id}`];
@@ -286,7 +291,7 @@ function paintCards(container, items, scope) {
         child.inert = true; child.setAttribute('aria-hidden', 'true'); child.remove();
     }
     items.forEach((item, index) => {
-        const signature = JSON.stringify([preferences.showAddress, preferences.showLastUsed, preferences.showWindow, preferences.showGroup, state.windowOrder, Boolean($(scope === 'group' ? 'group-search' : 'search-input').value.trim()), $('opt-nested').checked, Boolean(features?.hasFilters(scope)), item.tab ? {...item.tab, index: undefined} : item.group, item.members?.map(t => [t.id, t.title, t.url, state.screenshots[`screenshot_${t.id}`]]), state.screenshots[`screenshot_${item.tab?.id}`], $('opt-all-windows').checked]);
+        const signature = JSON.stringify([$('sort-select').value, preferences.groupPreviewOverflow, item.group && groupLayout(item.group.id), preferences.showAddress, preferences.showLastUsed, preferences.showWindow, preferences.showGroup, state.windowOrder, Boolean($(scope === 'group' ? 'group-search' : 'search-input').value.trim()), $('opt-nested').checked, Boolean(features?.hasFilters(scope)), item.tab ? {...item.tab, index: undefined} : item.group, item.members?.map(t => [t.id, t.title, t.url, t.index, t.lastAccessed, state.screenshots[`screenshot_${t.id}`]]), state.screenshots[`screenshot_${item.tab?.id}`], $('opt-all-windows').checked]);
         let card = old.get(item.key);
         if (!card) card = createCard(item, scope);
         else if (card.dataset.signature !== signature) {
@@ -387,7 +392,7 @@ function registerGrid(container, scope) {
         sort:canReorder(container),
         animation: 0, forceFallback: true, fallbackOnBody: scope !== 'group', supportPointer: false, draggable: '.card[data-key]',
         fallbackTolerance: 6, delay: 250, delayOnTouchOnly: !mouseSwipeEnabled(preferences), touchStartThreshold: 2,
-        filter(event) { return Boolean(event.target.closest('.card-menu, .card-close, .card-mute, input')) || !canDrag(container); },
+        filter(event) { return isCardReturning(event.target.closest('.card[data-key]')) || Boolean(event.target.closest('.card-menu, .card-close, .card-mute, input')) || !canDrag(container); },
         preventOnFilter: false, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', dragClass: 'sortable-drag',
         onMove(evt) {
             const direction=!evt.to.dataset.destination?dragGrouping.sortMove(evt):undefined;
@@ -814,7 +819,15 @@ function populateTabActions(menu, ids, scope, item = null, { insideGroup = false
     const group = item?.kind === 'group';
     const title = item?.tab?.title || item?.group?.title || tr("Selected tabs");
     const add = (label, handler, opts = {}) => menuAction(menu, label, handler, { disabled: !members.length, ...opts });
-    if (group) add(tr("New Tab in Group"), () => newTab(item.group.id));
+    if (group) {
+        add(tr("New Tab in Group"), () => newTab(item.group.id));
+        if (!insideGroup) menuSubmenu(menu,tr('Thumbnail layout'),()=>[
+            ['grid',tr('Grid')],['split',tr('Side by side')],['featured',tr('Featured')]
+        ].map(([layout,label])=>[label,()=>run(async()=>{
+            const key=groupLayoutKey(item.group.id);
+            await chrome.storage.session.set({[key]:layout});groupLayouts[key]=layout;render();
+        }),null,{layout,selected:groupLayout(item.group.id)===layout}]));
+    }
     else add(tr("New Tab After Selected"), () => run(async () => { const tab=await rpc('newAfter', ids, false); await finishNewTab(tab);return tab; }), { disabled: !oneWindow });
     menuSubmenu(menu, members.length > 1 ? tr("Add Tabs to Group") : tr("Add Tab to Group"), () => {
         const groups = state.groups.filter(g => g.windowId === members[0]?.windowId);
@@ -934,7 +947,7 @@ let submenuRevision = 0;
 async function openSubmenu(trigger, entries, focus = true) {
     if (submenuOpener === trigger && $('context-submenu').matches(':popover-open')) { if (focus) $('context-submenu').querySelector('button')?.focus(); return; }
     closeSubmenu(); submenuOpener = trigger; const revision = ++submenuRevision;
-    const sub = $('context-submenu'); $('context-menu').append(sub); menuContent(sub).replaceChildren(); sub.setAttribute('aria-label', trigger.textContent);
+    const sub = $('context-submenu'); $('context-menu').append(sub); menuContent(sub).replaceChildren(); sub.classList.remove('layout-submenu'); sub.setAttribute('aria-label', trigger.textContent);
     menuContent(sub).append(el('div', 'menu-name', tr("Loading…"))); sub.showPopover(); trigger.setAttribute('aria-expanded', 'true');
     const place = () => { const r = trigger.getBoundingClientRect(); sub.style.left = `${Math.max(8, r.right + sub.offsetWidth + 8 < innerWidth ? r.right : r.left - sub.offsetWidth)}px`; sub.style.top = `${Math.max(8, Math.min(r.top, innerHeight - sub.offsetHeight - 8))}px`; };
     place();
@@ -942,7 +955,15 @@ async function openSubmenu(trigger, entries, focus = true) {
         const values = typeof entries === 'function' ? await entries() : entries;
         if (revision !== submenuRevision || !sub.matches(':popover-open')) return;
         menuContent(sub).replaceChildren();
-        for (const entry of values) { if (!entry) { menuDivider(sub); continue; } const [label, handler, group] = entry; const action=menuAction(sub,label,handler);if(group)action.replaceChildren(groupLabel(group)); }
+        for (const entry of values) { if (!entry) { menuDivider(sub); continue; } const [label, handler, group, view] = entry; const action=menuAction(sub,label,handler);if(group)action.replaceChildren(groupLabel(group));
+            if(view){
+                sub.classList.add('layout-submenu');action.setAttribute('role','menuitemradio');action.setAttribute('aria-checked',String(view.selected));
+                const sample=el('span','layout-sample group-preview');sample.dataset.layout=view.layout;sample.setAttribute('aria-hidden','true');
+                for(let i=0;i<GROUP_LAYOUTS[view.layout];i++)sample.append(el('span','group-tile'));
+                action.setAttribute('aria-label',label);
+                action.replaceChildren(sample);
+            }
+        }
         place(); if (focus) sub.querySelector('button')?.focus();
     } catch (error) { if (revision === submenuRevision && sub.matches(':popover-open')) menuContent(sub).replaceChildren(el('div', 'menu-name', translateError(error.message))); }
 }
@@ -1178,6 +1199,7 @@ for (const name of ['onCreated', 'onUpdated', 'onRemoved', 'onMoved']) chrome.ta
 chrome.windows.onRemoved.addListener(scheduleRefresh);
 chrome.sessions.onChanged.addListener(() => { refreshRecent(); });
 chrome.storage.onChanged.addListener((changes, area) => {
+    if(area==='session' && Object.keys(changes).some(key=>key.startsWith('tabgridGroupLayout:'))){for(const [key,value] of Object.entries(changes))if(key.startsWith('tabgridGroupLayout:'))groupLayouts[key]=value.newValue;render();}
     if (area === 'local' && changes[PREFS_KEY]?.newValue) applyPreferences(changes[PREFS_KEY].newValue);
     if (!privateMode && area === 'session' && changes.tabgridProtectedGroups) { protectedGroups = changes.tabgridProtectedGroups.newValue || []; scheduleRefresh(); }
     if (!privateMode && (area === 'local' && Object.keys(changes).some(k => k.startsWith('screenshot_') || k === 'tabActivity') || area === 'session' && changes.returnedTabs)) scheduleRefresh();
@@ -1239,6 +1261,7 @@ function updateShortcutHints() {
 async function init() {
     const [win, saved] = await Promise.all([chrome.windows.getCurrent(), rpc('preferences')]);
     state.windowId = win.id; preferences = saved;
+    groupLayouts = Object.fromEntries(Object.entries(await chrome.storage.session.get(null)).filter(([key])=>key.startsWith('tabgridGroupLayout:')));
     $('privacy-note').hidden = !privateMode;
     if (privateMode) {
         document.querySelector('h1').firstChild.textContent = tr("Incognito Tabs ");

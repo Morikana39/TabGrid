@@ -1,5 +1,12 @@
 // UI messages only; never translate user content.
 export default {
+  "Thumbnail layout": "サムネイルの配置",
+  "Grid": "グリッド",
+  "Side by side": "横並び",
+  "Featured": "強調",
+  "Show remaining tab count in group previews": "グループのプレビューに残りのタブ数を表示",
+  "Group previews": "グループのプレビュー",
+
   "Show me": "場所を確認",
   "Got it": "了解",
   "Excluded and Incognito tabs are skipped. Some Chrome pages need permission from clicking the extension icon on that page first. Enable tab previews in settings to use this feature.": "除外したサイトとシークレットタブはスキップします。一部の Chrome ページでは、そのページで先に拡張機能アイコンをクリックして権限を付与する必要があります。この機能を使うには設定でタブのプレビューを有効にしてください。",

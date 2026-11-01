@@ -118,7 +118,8 @@ body { min-height: 100vh; }
 /* Translated cards must not widen the page or sit beneath their neighbors. */
 html.card-swipe-active, html.card-swipe-active body { overflow-x: clip; overscroll-behavior-x: none; }
 .window-content:not([data-collapsed]):has(.card[data-swipe]) { overflow: visible; }
-.card[data-swipe] { position: relative; z-index: 50; }
+/* Keep the entire returning card above neighboring slots until it settles. */
+.card[data-swipe], .card[data-card-return] { position: relative; z-index: 50; }
 .card[data-swipe] > .card-surface { transition: none; }
 
 /* The target's stationary slot owns the outline; only its surface shrinks. */
