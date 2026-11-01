@@ -2,7 +2,7 @@ import test from 'node:test';
 import { fixture } from './chrome-mock.mjs';
 import assert from 'node:assert/strict';
 import { TabActions } from '../lib/tab-actions.mjs';
-import { keyFor, selectedTabs, openItems, recentItems } from '../lib/tab-model.mjs';
+import { keyFor, selectedTabs, openItems, recentItems, filterRecentItems } from '../lib/tab-model.mjs';
 
 const grid = 'chrome-extension://test/grid.html';
 
@@ -23,6 +23,47 @@ test('session models filter own pages and retain closed windows', () => {
     assert.equal(recentItems(sessions,grid).length,1);
     assert.equal(recentItems(sessions,grid)[0].isWindow,true);
 
+});
+test('restoring one closed-window tab uses its session ID and leaves its siblings available', async () => {
+    const f = fixture([{id:1,windowId:1,index:0}]);
+    f.sessions.push({window:{sessionId:'window',tabs:[
+        {sessionId:'child-a',title:'Alpha',url:'https://example.com/alpha'},
+        {sessionId:'child-b',title:'Beta',url:'https://example.com/beta'}
+    ]}});
+    const filtered = filterRecentItems(recentItems(f.sessions, grid), 'Alpha');
+    const result = await f.actions.restoreSession(filtered[0].tabs[0].sessionId);
+    assert.equal(result.tab.url, 'https://example.com/alpha');
+    assert.deepEqual(f.calls.filter(c=>c[0]==='restoreSession'), [['restoreSession','child-a']]);
+    assert.deepEqual(recentItems(f.sessions,grid)[0].tabs.map(t=>t.sessionId), ['child-b']);
+    await assert.rejects(f.actions.restoreSession('child-a'), /Expired/);
+    const window = await f.actions.restoreSession('window');
+    assert.deepEqual(window.window.tabs.map(t=>t.url), ['https://example.com/beta']);
+    assert.equal(f.sessions.length,0);
+});
+test('missing session IDs never fall back to restoring the latest session', async () => {
+    const f=fixture([]);
+    for (const id of [undefined,null,'','   ',42]) await assert.rejects(f.actions.restoreSession(id), /no longer available/);
+    assert.equal(f.calls.filter(c=>c[0]==='restoreSession').length,0);
+});
+test('closed window expansion retains only individual search matches and excludes TabGrid', () => {
+    const items = recentItems([{ window: { sessionId: 'w', tabs: [
+        { title: 'TabGrid', url: grid },
+        { title: 'Alpha notes', url: 'https://notes.example/one' },
+        { title: 'Beta reference', url: 'https://reference.example/two' },
+        { url: 'https://untitled.example/' }
+    ] } }, {tab: {sessionId: 'single', title: 'Alpha single', url: 'https://single.example/'}}], grid);
+    assert.equal(filterRecentItems(items, '')[0].tabs.length, 3);
+    const found = filterRecentItems(items, 'ALPHA');
+    assert.equal(found.length, 2);
+    assert.deepEqual(found[0].tabs.map(t => t.title), ['Alpha notes']);
+    assert.equal(found[0].sessionId, 'w');
+    assert.equal(items[0].tabs.length, 3, 'search must not mutate the complete window');
+    assert.equal(filterRecentItems(items, 'alpha beta', {matchMode: 'words'}).length, 0);
+    assert.equal(filterRecentItems(items, 'notes.example', {matchUrl: false}).length, 0);
+    assert.equal(filterRecentItems(items, 'Beta reference', {matchTitle: false}).length, 0);
+    assert.equal(filterRecentItems(items, 'untitled.example')[0].tabs.length, 1);
+    assert.equal(filterRecentItems(items, 'nothing').length, 0);
+    assert.equal(filterRecentItems(items, '   ')[0].tabs.length, 3);
 });
 test('close and undo retain multiple groups, original windows, pinned and muted state', async () => {
     const f = fixture([{id:1,windowId:1,index:0,pinned:true,mutedInfo:{muted:true}},{id:2,windowId:1,index:1,groupId:7},{id:3,windowId:1,index:2,groupId:7},{id:4,windowId:2,index:0,groupId:8}], [{id:7,windowId:1,title:'Research',color:'blue',collapsed:true},{id:8,windowId:2,title:'Reading',color:'green',collapsed:false}]);

@@ -1,3 +1,4 @@
+import {mountThumbnailUpdate} from './lib/thumbnail-update-ui.mjs';
 import {mountNoticePopover} from './lib/notice-popover.mjs';
 import {createCardReturn} from './lib/card-return.mjs';
 import { tr, currentLanguage, resolveLanguage, translateError } from './lib/i18n.mjs';
@@ -27,7 +28,7 @@ import autoAnimate from './node_modules/@formkit/auto-animate/index.mjs';
 import { windowLabel, relativeTabIds, siteOrigins, anchoredMenuLayout } from './lib/tab-menu.mjs';
 import { containMenuFocus } from './lib/menu-focus.mjs';
 import { gridMotion } from './lib/tab-motion.mjs';
-import { mergeVisibleOrder, keyFor, isGridUrl, matches, selectedTabs, openItems, recentItems } from './lib/tab-model.mjs';
+import { mergeVisibleOrder, keyFor, isGridUrl, matches, selectedTabs, openItems, recentItems, filterRecentItems } from './lib/tab-model.mjs';
 
 import { dropTargetTabIds } from './lib/tab-gestures.mjs';
 import { attachCardIntent, cardColumns, idleDays, selectionActive, acceptsGroupDrop, windowSections, UndoNotice } from './lib/tab-ui.mjs';
@@ -141,7 +142,7 @@ function restoreFocus(token) {
     if (!token || document.activeElement?.closest('#action-dialog, #context-menu')) return;
     const container = $(token.parent);
     const card = [...(container?.children || [])].find(c => c.dataset.key === token.key);
-    const target = card?.querySelector(`[data-part="${token.part || 'open'}"]`) || container?.querySelector('.card-open, [data-part=open]');
+    const target = card?.querySelector(`[data-part="${token.part || 'open'}"]`) || card?.querySelector('[data-part=expand]') || container?.querySelector('.card-open, [data-part=open]');
     target?.focus({ preventScroll: true });
 }
 
@@ -573,24 +574,74 @@ function render(options) {
     if(returningToTabs)for(const motion of motionViews.values())motion.revealNext();
     syncSelection(false); restoreFocus(token); scrollToCreatedTab(); if(!disclosure)flushGridLayout();finishNavigation();
 }
+const expandedRecentWindows = new Set();
 function renderSessions(source, items, error, empty) {
     const query = $('search-input').value;
-    const filtered = items.filter(item => matches(item, query, preferences));
+    const filtered = filterRecentItems(items, query, preferences);
+    const windowKeys = new Set(items.filter(item => item.isWindow).map(item => item.key));
+    for (const key of expandedRecentWindows) if (!windowKeys.has(key)) expandedRecentWindows.delete(key);
     const list = $(`${source}-list`);
     const signature = JSON.stringify(filtered);
     if (list.dataset.signature !== signature) {
         list.dataset.signature = signature; list.replaceChildren();
         for (const item of filtered) {
             const row = el('div', 'session-row'); row.dataset.key = item.key;
-            const details = el('div', 'session-details'); details.append(el('p', 'session-title', item.title));
+            const details = el(item.isWindow ? 'span' : 'div', 'session-details'); details.append(el(item.isWindow ? 'span' : 'p', 'session-title', item.title));
             const when = item.time ? new Date(item.time * 1000).toLocaleString(currentLanguage()) : '';
-            details.append(el('div', 'session-meta', `${item.isWindow ? tr("Closed window") : domain(item.url)}${when ? ` · ${when}` : ''}`));
+            details.append(el(item.isWindow ? 'span' : 'div', 'session-meta', `${item.isWindow ? tr("Closed window") : domain(item.url)}${when ? ` · ${when}` : ''}`));
             const action = button(item.isWindow ? tr("Restore window") : tr("Restore tab"), () => run(async () => {
                 await features?.record('root');
                 await rpc('restoreSession', item.sessionId);
                 await refreshRecent();
             }, tr("Session restored."))); action.dataset.part = 'open'; action.setAttribute('aria-label', `${action.textContent}: ${item.title}`);
             row.append(details, action); list.append(row);
+            if (item.isWindow) {
+                row.classList.add('session-window');
+                const header = el('div', 'session-window-header');
+                const content = el('div', 'session-window-content');
+                const tabs = el('ul', 'session-tabs');
+                content.id = `${source}-window-${item.sessionId}-tabs`;
+                content.append(tabs);
+                const toggle = button('', () => {
+                    if (expandedRecentWindows.has(item.key)) expandedRecentWindows.delete(item.key);
+                    else expandedRecentWindows.add(item.key);
+                    syncExpanded();
+                }, 'session-expand');
+                toggle.dataset.part = 'expand';
+                toggle.setAttribute('aria-controls', content.id);
+                const chevron = el('span', 'session-chevron'); chevron.setAttribute('aria-hidden', 'true'); toggle.append(chevron, details);
+                function syncExpanded() {
+                    const expanded = expandedRecentWindows.has(item.key);
+                    if (!expanded && content.contains(document.activeElement)) toggle.focus({preventScroll: true});
+                    toggle.setAttribute('aria-expanded', String(expanded));
+                    toggle.setAttribute('aria-label', `${expanded ? tr("Collapse window tabs") : tr("Expand window tabs")}: ${item.title}`);
+                    content.toggleAttribute('data-collapsed', !expanded);
+                    content.inert = !expanded;
+                    content.setAttribute('aria-hidden', String(!expanded));
+                }
+                syncExpanded();
+                for (const tab of item.tabs) {
+                    const child = el('li', 'session-tab');
+                    const title = tab.title || tab.url || tr("Closed tab");
+                    const childDetails = el('div', 'session-details');
+                    childDetails.append(el('p', 'session-title', title), el('div', 'session-meta', tab.url || ''));
+                    const restore = button(tr("Restore tab"), () => run(async () => {
+                        await features?.record('root');
+                        await rpc('restoreSession', tab.sessionId);
+                        await refreshRecent();
+                    }, tr("Session restored.")));
+                    restore.dataset.part = `restore-${tab.sessionId}`;
+                    restore.setAttribute('aria-label', `${tr("Restore tab")}: ${title}`);
+                    restore.disabled = !tab.sessionId;
+                    if (restore.disabled) restore.title = tr("This session is no longer available to restore.");
+                    child.append(childDetails, restore);
+                    tabs.append(child);
+                }
+                header.append(toggle, action); row.replaceChildren(header, content);
+                row.addEventListener('click', event => {
+                    if (!event.target.closest('button,a,input,select,textarea') && !window.getSelection()?.toString()) toggle.click();
+                });
+            }
         }
     }
     $(`${source}-empty`).hidden = filtered.length > 0 && !error;
@@ -648,7 +699,7 @@ function syncHeaderFold(folded) {
 }
 function syncModal() {
     const menuOpen = $('context-menu').matches(':popover-open') || $('page-menu').matches(':popover-open');
-    const open = $('group-dialog').open || $('action-dialog').open || $('settings-dialog').open || menuOpen;
+    const open = $('group-dialog').open || $('action-dialog').open || $('settings-dialog').open || $('thumbnail-tour').open || menuOpen;
     document.documentElement.classList.toggle('menu-open', menuOpen);
     syncHeaderFold($('context-menu').matches(':popover-open') && menuFocus?.scope === 'root' && !$('group-dialog').open);
     document.querySelectorAll('.card.menu-active').forEach(card => card.classList.remove('menu-active'));
@@ -1103,7 +1154,7 @@ $('refresh-btn').onclick = async () => { $('refresh-btn').disabled = true; try {
 
 // Native dialogs provide focus trapping and Escape. Card navigation is shared by both grids.
 document.addEventListener('keydown', e => {
-    if (e.defaultPrevented || e.target.matches('input, textarea, select') || $('settings-dialog').open || $('page-menu').matches(':popover-open') || $('action-dialog').open || $('context-menu').matches(':popover-open')) return;
+    if (e.defaultPrevented || e.target.matches('input, textarea, select') || $('thumbnail-tour').open || $('settings-dialog').open || $('page-menu').matches(':popover-open') || $('action-dialog').open || $('context-menu').matches(':popover-open')) return;
     const scope = scopeNow();
     if (scope === 'root' && !['open', 'all', 'inactive'].includes(state.view)) return;
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 't') return; // Chrome owns native restore.
@@ -1209,6 +1260,7 @@ async function init() {
     mountLiquidInteractions(() => preferences);
     await Promise.all([refresh(), refreshRecent(), updateUndo()]);
     await features.init(); await features.resume(await rpc('takeQuickView'),openGroup); updateShortcutHints();
+    mountThumbnailUpdate({api:chrome,rpc,getPrefs:()=>preferences,privateMode,announce,syncModal,refresh});
 }
 async function openGridWindow(incognito) {
     await run(async()=>{

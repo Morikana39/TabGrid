@@ -74,6 +74,7 @@
 <label class="menu-switch"><span class="ui-icon" data-icon="filter_none" aria-hidden="true"></span><span id="all-windows-label">Show all windows</span><input type="checkbox" role="switch" id="opt-all-windows"></label>
         <div role="separator"></div>
         <button id="refresh-btn" role="menuitem"><span class="ui-icon" data-icon="refresh" aria-hidden="true"></span><span>Refresh</span></button>
+        <button id="update-thumbnails-btn" role="menuitem"><span class="ui-icon" data-icon="refresh" aria-hidden="true"></span><span class="thumbnail-update-label">Update all thumbnails</span></button>
         <button id="regular-window-btn" role="menuitem"><span class="ui-icon" data-icon="open_in_new" aria-hidden="true"></span><span>New regular window</span></button>
         <button id="private-window-btn" role="menuitem"><span class="ui-icon" data-icon="visibility_off" aria-hidden="true"></span><span>New incognito window</span></button>
         <button id="new-group-btn" role="menuitem"><span class="ui-icon" data-icon="tab" aria-hidden="true"></span><span>New tab group</span></button>
@@ -83,6 +84,13 @@
         <div role="separator"></div>
         <button id="settings-btn" role="menuitem"><span class="ui-icon" data-icon="settings" aria-hidden="true"></span><span>Extension settings</span></button>
     </div>
+    <dialog id="thumbnail-tour" aria-labelledby="thumbnail-tour-title" aria-describedby="thumbnail-tour-description">
+        <h2 id="thumbnail-tour-title">Update all thumbnails</h2>
+        <p id="thumbnail-tour-description">Open More options (⋮) at the top right, then choose Update all thumbnails.</p>
+        <p>TabGrid briefly visits tabs in all regular windows, then brings you back. Switch tabs yourself or click the extension icon to stop.</p>
+        <p class="section-note">Excluded and Incognito tabs are skipped. Some Chrome pages need permission from clicking the extension icon on that page first. Enable tab previews in settings to use this feature.</p>
+        <div class="dialog-actions"><button id="thumbnail-tour-done">Got it</button><button id="thumbnail-tour-show" class="primary">Show me</button></div>
+    </dialog>
     <dialog id="settings-dialog" aria-labelledby="settings-heading">
         <div class="dialog-heading"><h2 id="settings-heading">Extension settings</h2><button id="settings-done" aria-label="Close settings">×</button></div>
     </dialog>

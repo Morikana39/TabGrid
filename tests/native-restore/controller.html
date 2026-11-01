@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>TabGrid native restore test</title>
+<h1>Native Chrome restore test</h1>
+<p>Only disposable tabs created by this page are closed. Existing sessions are never restored.</p>
+<button id="baseline">Test normal extension page</button>
+<button id="blank">Test replace with about:blank</button>
+<button id="newtab">Test replace with chrome://newtab/</button>
+<button id="direct">Test fresh New Tab</button>
+<button id="pinned">Test pinned New Tab</button>
+<button id="manual">Create manual close target</button>
+<button id="inspect">Inspect test sessions</button>
+<pre id="output"></pre><script type="module" src="controller.mjs"></script></html>

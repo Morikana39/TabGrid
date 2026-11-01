@@ -1,3 +1,5 @@
+import {PreviewBatch} from '../lib/preview-batch.mjs';
+let previewBatch;
 import {GridLifecycle} from '../lib/grid-lifecycle.mjs';
 import { initializeLanguage } from '../lib/i18n.mjs';
 await initializeLanguage({storage:{local:{get:async()=>JSON.parse(localStorage.getItem(new URLSearchParams(location.search).has('private')?'tabgrid-fixture-private':'tabgrid-fixture-local')||'{}')}}});
@@ -64,18 +66,25 @@ api.storage.session.set=async data=>{await originalSet(data);persistSession();ap
 api.storage.session.remove=async key=>{await originalRemove(key);persistSession();};
 for(const name of ['onCreated','onUpdated','onRemoved','onMoved','onAttached','onDetached','onActivated','onReplaced']) api.tabs[name]=event();
 for(const name of ['onCreated','onUpdated','onRemoved','onMoved']) api.tabGroups[name]=event();
-api.windows.onRemoved=event();api.sessions.onChanged=event();
+api.windows.onFocusChanged=event();api.windows.onRemoved=event();api.sessions.onChanged=event();
 api.windows.getCurrent=async()=>({id:1,incognito:privateMode});
 api.windows.getAll=async()=>[{id:1,incognito:privateMode},{id:2,incognito:privateMode}];
-api.windows.update=async()=>{};
+api.windows.update=async(id,props)=>{if(props.focused)api.windows.onFocusChanged.emit(id);};
+const queryTabs=api.tabs.query;api.tabs.query=async options=>(await queryTabs(options)).filter(t=>options.active===undefined||t.active===options.active);
 api.tabs.reload=async()=>{};
 api.tabs.duplicate=async id=>{const {id: _id, ...tab}=await api.tabs.get(id);return api.tabs.create({...tab,index:tab.index+1,active:false});};
 api.tabs.ungroup=async ids=>{for(const id of [ids].flat()) await api.tabs.update(id,{groupId:-1});};
 for(const method of ['create','remove','update','move','group','ungroup']) {
-    const original=api.tabs[method]; api.tabs[method]=async(...args)=>{const result=await original(...args);api.tabs.onUpdated.emit();if(method==='remove')api.sessions.onChanged.emit();if(method==='update'&&args[1]?.active)await f.actions.rememberOpened(`tab:${args[0]}`);return result;};
+    const original=api.tabs[method]; api.tabs[method]=async(...args)=>{const result=await original(...args);api.tabs.onUpdated.emit();if(method==='remove')api.sessions.onChanged.emit();if(method==='update'&&args[1]?.active){api.tabs.onActivated.emit({tabId:args[0],windowId:result.windowId});if(!previewBatch?.active)await f.actions.rememberOpened(`tab:${args[0]}`);}return result;};
 }
 for(const method of ['update','move']) {const original=api.tabGroups[method];api.tabGroups[method]=async(...args)=>{const result=await original(...args);api.tabGroups.onUpdated.emit();return result;};}
 f.sessions.push({lastModified:1700000000,tab:{id:90,windowId:1,index:5,url:'https://example.com/closed',title:'Recently closed example',sessionId:'s90'}});
+if (new URLSearchParams(location.search).has('closed-windows')) f.sessions.push({lastModified:1700000000,window:{sessionId:'closed-window',tabs:[
+    {sessionId:'closed-research',title:'Research notes',url:'https://example.com/research'},
+    {sessionId:'closed-reference',title:'Reference article',url:'https://example.com/reference'},
+    {sessionId:'closed-music',title:'Music',url:'https://example.com/music'},
+    {sessionId:'closed-grid',title:'TabGrid',url:gridUrl}
+]}});
 const restoreSession=api.sessions.restore;
 api.sessions.restore=async id=>{const result=await restoreSession(id);api.sessions.onChanged.emit();return result;};
 
@@ -84,7 +93,15 @@ if (new URLSearchParams(location.search).has('offline') && !privateMode) {
     const svg='<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480" fill="#d7e5ff"/><text x="40" y="230" font-size="32" fill="#25345b">Cached fixture preview</text></svg>';
     await api.storage.local.set({screenshot_2:`data:image/svg+xml;base64,${btoa(svg)}`});
 }
+api.tabs.captureVisibleTab=async windowId=>{
+    const tab=(await api.tabs.query({windowId})).find(t=>t.active);
+    const canvas=document.createElement('canvas');canvas.width=640;canvas.height=400;
+    const ctx=canvas.getContext('2d');ctx.fillStyle='#d7e5ff';ctx.fillRect(0,0,640,400);
+    ctx.fillStyle='#25345b';ctx.font='24px sans-serif';ctx.fillText('Simulated thumbnail: '+tab.id,30,200);
+    return canvas.toDataURL('image/jpeg');
+};
 const personalization=new Personalization(api,gridUrl);
+previewBatch=new PreviewBatch(api,personalization,gridUrl);
 // Opt-in wallpaper fixture for real WebGPU optics; no user image or flag needed.
 if (new URLSearchParams(location.search).has('liquid')) {
     const wallpaper=document.createElement('canvas');wallpaper.width=1200;wallpaper.height=900;
@@ -99,7 +116,7 @@ const windowOrder=new WindowOrder(api,privateMode);
 api.commands={async getAll(){return [{name:'_execute_action',shortcut:''}];}};
 const gridLifecycle=new GridLifecycle(api,gridUrl,{privateMode,preferences:()=>personalization.preferences()});
 let messageQueue=Promise.resolve();
-api.runtime={getURL(path){return new URL(path.startsWith('/')?path:'/'+path,location.href).href;},async sendMessage(message){const work=async()=>{try{const a=message.action,args=message.args||[];const methods={switchFromGrid:()=>gridLifecycle.switchTo(99,args[0],args[1]),takeQuickView:()=>gridLifecycle.takeView(),windowOrder:()=>windowOrder.snapshot(),preferences:()=>personalization.preferences(),updatePreferences:()=>personalization.updatePreferences(args[0]),searchHistory:()=>personalization.history(...args),background:()=>personalization.background(...args),preview:()=>personalization.preview(...args),importSettings:()=>personalization.import(...args),protectedGroups:()=>personalization.protectedGroups(...args)};if(methods[a])return {result:await methods[a]()};return {result:message.action==='undo'?await f.actions.undo(message.args[0],99):await f.actions[message.action](...message.args)};}catch(error){return {error:error.message};}};const pending=messageQueue.then(work,work);messageQueue=pending.catch(()=>{});return pending;}};
+api.runtime={getURL(path){return new URL(path.startsWith('/')?path:'/'+path,location.href).href;},async sendMessage(message){const work=async()=>{try{const a=message.action,args=message.args||[];const methods={startThumbnailUpdate:()=>previewBatch.start(99),thumbnailUpdateStatus:()=>previewBatch.status(),cancelThumbnailUpdate:()=>previewBatch.cancel(),switchFromGrid:()=>gridLifecycle.switchTo(99,args[0],args[1]),takeQuickView:()=>gridLifecycle.takeView(1),windowOrder:()=>windowOrder.snapshot(),preferences:()=>personalization.preferences(),updatePreferences:()=>personalization.updatePreferences(args[0]),searchHistory:()=>personalization.history(...args),background:()=>personalization.background(...args),preview:()=>personalization.preview(...args),importSettings:()=>personalization.import(...args),protectedGroups:()=>personalization.protectedGroups(...args)};if(methods[a])return {result:await methods[a]()};return {result:message.action==='undo'?await f.actions.undo(message.args[0],99):await f.actions[message.action](...message.args)};}catch(error){return {error:error.message};}};const pending=messageQueue.then(work,work);messageQueue=pending.catch(()=>{});return pending;}};
 globalThis.chrome=api;
 const panel=document.createElement('div');panel.style.cssText='padding:12px;border:1px dashed #808080;margin:12px 0;height:180px;overflow:auto';panel.textContent='UI test sandbox — simulated tabs only. ';
 if(new URLSearchParams(location.search).has('liquid')) {
@@ -110,6 +127,8 @@ if(new URLSearchParams(location.search).has('liquid')) {
 const iconPreview=document.createElement('img'); iconPreview.src='/tileIcon.png'; iconPreview.alt='Extension icon preview'; iconPreview.width=32; iconPreview.height=32; panel.append(iconPreview);
 const external=document.createElement('button');external.textContent='Simulate external tab';external.onclick=()=>api.tabs.create({windowId:1,url:'https://example.com/external',title:'Externally created tab'});panel.append(external);
 const log=document.createElement('output'); log.style.cssText='display:block;margin-top:8px;white-space:pre-wrap';panel.append(log);
+const thumbnailReport=document.createElement('output');
+const thumbnailEvidence=document.createElement('button');thumbnailEvidence.textContent='Inspect thumbnail update';thumbnailEvidence.onclick=async()=>{thumbnailReport.textContent=JSON.stringify({status:await previewBatch.status(),images:Object.keys(await api.storage.local.get(null)).filter(k=>k.startsWith('screenshot_'))});};const thumbnailTools=document.createElement('div');thumbnailTools.append(thumbnailEvidence,thumbnailReport);document.body.append(thumbnailTools);thumbnailTools.hidden=new URLSearchParams(location.search).has('design');
 const order=document.createElement('button');order.textContent='Inspect simulated tab order';order.onclick=()=>{log.textContent=f.tabs().filter(t=>t.id!==99).sort((a,b)=>a.windowId-b.windowId||a.index-b.index).map(t=>`${t.windowId}: ${t.title||t.url} [${t.groupId===-1?'tab':'group '+t.groupId}]${t.active?' (active)':''}`).join('\n') + '\nActive simulated tabs: ' + f.tabs().filter(t=>t.active).map(t=>t.title||t.url).join(', ');};panel.append(order);
 const backupEvidence=document.createElement('output');backupEvidence.id='test-backup-log';backupEvidence.style.display='block';panel.append(backupEvidence);
 const createObjectURL=URL.createObjectURL.bind(URL);

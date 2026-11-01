@@ -58,6 +58,12 @@ Settings can be exported or imported as JSON. Backups exclude browsing history, 
 
 The interface, settings, fonts, and tab organization work locally without a server or cloud sync. Websites still need their usual connectivity. Previews and browsing-related data stay in local Chrome storage; optional bookmark, Reading List, and site-muting permissions are requested when used.
 
+The toolbar icon opens or reuses TabGrid in the current Chrome window. Each window can keep its own TabGrid tab.
+
+**Recently closed windows:** click a window row to expand its tabs. Search shows only matching tabs inside expanded windows. Restore individual tabs or the whole window.
+
+**Update all previews:** choose **⋮ → Update all thumbnails**. TabGrid briefly visits tabs across regular windows, then returns you to the grid. Switching tabs yourself or clicking the extension icon stops the update. A first-use walkthrough points out the command. Excluded, private, and inaccessible pages are skipped.
+
 Chrome controls screenshot access. For restricted pages, open TabGrid through its toolbar icon or shortcut while the target page is active; capture may still be refused. Opening an existing TabGrid tab directly uses the latest saved preview. File pages need Chrome’s file-access permission.
 
 Enable **Allow in Incognito** to use TabGrid in private windows. Regular and private tabs stay separate; Incognito does not save screenshots, search history, or Undo records. Chrome may still record TabGrid closures in Recently closed; restored duplicate grids remain open to avoid a close/restore loop.

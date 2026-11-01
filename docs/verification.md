@@ -1267,3 +1267,38 @@ Final checks: `npm run check`, `npm test` (204/204 passing), and `git diff --che
   added an end-to-end packaging regression for both newline formats (including
   a temporary project path containing spaces). The runtime ZIP is unchanged.
   This checks packaging on Windows, not native Chrome rendering or permissions.
+
+## 2026-10-27 — Update all thumbnails and first-use walkthrough
+
+- Added More options → Update all thumbnails, processing regular-window tabs sequentially through the existing quota-limited preview cache. The first-use dialog's Show me button opens this menu and focuses the command; dismissal persists locally. English, Simplified Chinese and Japanese are included.
+- Background activations pause automatic captures and do not change TabGrid's last-opened highlight. Original window selections/focus are restored on completion. User tab/window changes cancel without stealing focus; the extension icon and menu stop command also cancel. Minimized windows are temporarily restored and re-minimized. Existing screenshot preferences, exclusions, privacy rules and Chrome permission checks remain in force. No extra permissions.
+- Chrome browser UI fixture: Show me reached the correct menu item, a clean eight-tab run reported 8 updated / 0 skipped and stored all eight simulated previews, reload did not repeat the tutorial, and the stop command remained available. No console warnings/errors in that fixture. Classic and glass menu/dialog appearance inspected.
+- This is a simulated-tab UI test plus mocked API regression coverage, not proof of real Chrome screenshot capture on every website or Windows. Chrome internal pages still require the applicable activeTab grant; the menu itself does not create such grants. A worker restart retires stale progress rather than resuming unwanted tab switching.
+
+- Final validation: 308 tests passed; syntax/module checks and the 115-file package verification passed on macOS. The rebuilt local ZIP is about 0.92 MiB. Hanging capture calls are bounded and cannot hold up explicit cancellation.
+
+## 2026-10-27 — Per-window TabGrid opening
+
+- Toolbar opening now queries and reuses grids only in the source tab's current window; another window's grid remains open and is never focused by this lookup. Repeated requests serialize, and source/target window membership is rechecked after asynchronous lookup. Regular and private contexts remain separate.
+- Optional close-after-switch quick-view snapshots are now keyed by both browsing context and source window. Another window cannot consume a saved query/filter/scroll snapshot. Window removal clears the corresponding snapshot. Restored duplicate tabs are still left alone to avoid feeding Chrome's native restore stack.
+- Added regressions for concurrent two-window opening/reuse, moved source/target tabs, a source left during lookup, and independently consumed window snapshots. All 312 tests and syntax/package checks pass. These are mocked Chrome API tests, not native multi-window shortcut execution.
+- Rechecked the public Chrome Sessions, History, Commands, Side Panel and Action references. Sessions exposes query/restore but no individual closed-tab exclusion or deletion API. A side panel or toolbar popup would avoid creating a normal tab, but requires a different UI; neither was substituted for the existing full-tab interface.
+# Closed-window expansion (2026-10-30)
+
+- Recently Closed windows have a keyboard-accessible disclosure button and an indented list of their tabs. Expansion survives search rerenders; restoring the window remains a separate action.
+- Search filters individual child tabs using the existing title/URL and phrase/word preferences. Words from separate tabs cannot combine into a match. TabGrid entries remain excluded from the displayed children.
+- Validation: 313 automated tests passed; syntax/module checks passed. Chrome browser preview with simulated session data (`grid.html?closed-windows`) verified expansion, Enter/Space toggling, one matching child during search, and all children returning when search is cleared. This was a UI fixture check, not a native closed-window restore test.
+
+## Closed-window restore controls (2026-10-30)
+
+- Each child tab now has a Restore tab action using its own saved session ID. Missing IDs disable the action, and the background rejects empty IDs rather than implicitly restoring an unrelated latest session.
+- The title, metadata, header space, and non-interactive row area toggle expansion. Restore buttons do not toggle it. Keyboard focus returns to the window disclosure when a restored child disappears.
+- Expansion/collapse animates height and opacity with the existing speed setting; the chevron rotates. CSS transitions can reverse mid-animation and honor motion-off/reduced-motion settings. Collapsed content becomes inert immediately.
+- Validation: 315 automated tests passed, including partial window restoration and invalid session IDs; syntax/module and diff checks passed. Chrome UI fixture verified title/padding clicks, individual restoration leaving siblings and expansion intact, focus recovery, Enter/Space toggling, and intermediate expansion/collapse heights and opacity. Native session restoration was not exercised against user history.
+- API reference: https://developer.chrome.com/docs/extensions/reference/api/sessions#method-restore
+
+## Release package refresh (2026-11-01)
+
+- Re-ran all 315 automated tests, JavaScript/module checks, and whitespace checks successfully.
+- Rebuilt the 115-file runtime ZIP (965354 bytes). Verified ZIP integrity, required files, portable paths, locale/license inclusion, and byte-for-byte inclusion of the updated grid, session actions, thumbnail updater, and window lifecycle modules. Development tests are excluded.
+- This refresh retains the v1.1.0 version and tag. The GitHub release notes identify the source commit used for the replacement asset.

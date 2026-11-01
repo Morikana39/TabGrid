@@ -37,7 +37,27 @@ export function fixture(initialTabs, initialGroups = [], grid = 'chrome-extensio
         },
         sessions: {
             async getRecentlyClosed() { return copy(sessions); },
-            async restore(id) { const index = sessions.findIndex(s => s.tab.sessionId === id); if (index < 0) throw new Error('Expired'); const record = sessions.splice(index,1)[0].tab; const t = await api.tabs.create({ ...record, id: nextId++, groupId: -1, active: false }); for (const other of tabs) if (other.windowId === t.windowId) other.active = other.id === t.id; return { tab: copy(get(t.id)) }; }
+            async restore(id) {
+                const index = sessions.findIndex(s => s.tab?.sessionId === id || s.window?.sessionId === id || s.window?.tabs.some(t => t.sessionId === id));
+                if (index < 0) throw new Error('Expired');
+                const session = sessions[index]; calls.push(['restoreSession', id]);
+                if (session.window?.sessionId === id) {
+                    const window = {id:nextWindow++,incognito:false}; windows.push(window); sessions.splice(index,1);
+                    const restored=[];
+                    for (const record of session.window.tabs) restored.push(await api.tabs.create({...record,id:nextId++,windowId:window.id,groupId:-1}));
+                    return {window:{...window,tabs:restored}};
+                }
+                let record;
+                if (session.tab) { record=session.tab; sessions.splice(index,1); }
+                else {
+                    const child=session.window.tabs.findIndex(t=>t.sessionId===id);
+                    [record]=session.window.tabs.splice(child,1);
+                    if (!session.window.tabs.length) sessions.splice(index,1);
+                }
+                const t = await api.tabs.create({ ...record, id: nextId++, windowId:record.windowId ?? windows[0]?.id, groupId: -1, active: false });
+                for (const other of tabs) if (other.windowId === t.windowId) other.active = other.id === t.id;
+                return { tab: copy(get(t.id)) };
+            }
         }
     };
     api.storage.local = { async get(key) { return key === null ? copy(local) : { [key]: copy(local[key]) }; }, async set(data) { Object.assign(local, copy(data)); }, async remove(key) { delete local[key]; } };

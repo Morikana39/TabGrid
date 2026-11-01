@@ -266,3 +266,16 @@ test('toolbar capture survives the real quota delay after automatic capture',asy
     await f.cache.queue;
     assert.equal(f.calls.length,2);assert.equal(f.local.screenshot_1,'image-1600');
 });
+
+test('batch ownership pauses automatic capture and activation invalidation',async()=>{
+    const f=controllerFixture();let paused=true;
+    const refresh=installPreviewRefresh(f.api,f.personal,{paused:()=>paused});await flush();
+    const epoch=f.cache.epoch;
+    f.api.tabs.onActivated.emit({tabId:1,windowId:1});
+    await refresh.fromPage({type:'tabgrid-preview-activity'},{id:'test',frameId:0,url:'https://example.com/1',tab:await f.api.tabs.get(1)});
+    await new Promise(resolve=>setTimeout(resolve,550));
+    assert.equal(f.calls.length,0);assert.equal(f.injections.length,0);assert.equal(f.cache.epoch,epoch);
+    paused=false;
+    await refresh.fromPage({type:'tabgrid-preview-activity'},{id:'test',frameId:0,url:'https://example.com/1',tab:await f.api.tabs.get(1)});
+    assert.equal(f.calls.length,1);
+});
