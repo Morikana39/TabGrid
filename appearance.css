@@ -148,3 +148,5 @@ html .group-color-options input:focus-visible { outline: 2px solid var(--accent)
 .filter-picker-list:popover-open { display: flex; flex-direction: column; }
 .filter-picker-scroll { min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: none; scrollbar-width: thin; }
 .filter-picker-option > span { min-width: 0; }
+
+.filter-picker input[readonly] { cursor: pointer; }

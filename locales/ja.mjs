@@ -1,5 +1,19 @@
 // UI messages only; never translate user content.
 export default {
+    "Close left view": "左側のビューを閉じる",
+    "Close right view": "右側のビューを閉じる",
+    "Split views separated.": "分割ビューを解除しました。",
+    "A split view partner is no longer available.": "分割ビューの相手のタブが見つかりません。",
+    "The split view tabs changed. Undo can retry when they are compatible.": "分割ビューのタブが変更されました。条件が合えば元に戻す操作を再試行できます。",
+    "Restoring split views requires Chrome 155 or later.": "分割ビューの復元には Chrome 155 以降が必要です。",
+    "Chrome cannot move an intact split view through this API.": "Chrome のこの API では分割ビューを維持したまま移動できません。",
+
+    "Arrange split view": "分割表示を配置",
+    "Separate views": "ビューを分離",
+    "Separating views requires Chrome 155 or later.": "ビューの分離には Chrome 155 以降が必要です。",
+    "Reverse card views": "カードの表示順を反転",
+    "Stacked": "上下に表示",
+
   "Thumbnail layout": "サムネイルの配置",
   "Grid": "グリッド",
   "Side by side": "横並び",

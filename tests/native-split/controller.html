@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>TabGrid native split reorder test</title>
+<h1>Native split reorder test</h1>
+<p>This test creates four disposable tabs in a separate Chrome window. It moves only those tabs and groups, leaving your existing tabs untouched. Closing the test tabs can add them to Recently closed.</p>
+<p>Run from the unpacked project extension, in Chrome 155 or later. The report checks native split IDs and adjacency after each move. Layout and divider positions must be checked visually.</p>
+<button id="run">Run native tests</button>
+<button id="cleanup" disabled>Close test tabs</button>
+<button id="download" disabled>Download report</button>
+<pre id="output" aria-live="polite">Ready.</pre>
+<script type="module" src="controller.mjs"></script>
+</html>

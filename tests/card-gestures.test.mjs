@@ -169,3 +169,16 @@ test('card overhang never arms removal or outside continuation while the cursor 
     assert.equal(f.bar.dataset.ready,'');f.controller.move({clientX:400,clientY:655});
     const released=f.controller.finish();assert.equal(released.ungroup,false);assert.equal(released.cancelled,true);
 });
+
+test('split cards continue from a group on cursor dwell and retain cancellation',t=>{
+    t.mock.timers.enable({apis:['setTimeout']});const f=groupingFixture();
+    f.source.itemModel.splitViewId=0;f.source.itemModel.members=[f.source.itemModel.tab,{id:4,windowId:1,groupId:7}];
+    f.dialog.open=true;f.controller.start(f.source,'group',7);
+    f.controller.move({clientX:8,clientY:150});t.mock.timers.tick(GROUP_EXIT_MS);
+    assert.equal(f.handoffs(),1);assert.equal(f.controller.handedOff(),true);
+    f.noHit();f.controller.move({clientX:500,clientY:400});
+    const result=f.controller.finish();assert.equal(result.ungroup,true);assert.equal(result.cancelled,false);
+    f.dialog.open=true;f.controller.start(f.source,'group',7);f.controller.move({clientX:8,clientY:150});
+    f.listeners.get('keydown')({key:'Escape',preventDefault(){},stopPropagation(){}});t.mock.timers.tick(GROUP_EXIT_MS);
+    assert.equal(f.handoffs(),1);assert.equal(f.controller.finish().cancelled,true);
+});

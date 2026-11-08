@@ -268,3 +268,13 @@ html.menu-open .card button:hover { background: transparent; color: inherit; }
 #context-submenu.layout-submenu button[aria-checked=true] { background: var(--selected); box-shadow: inset 0 0 0 1px var(--accent); }
 .layout-sample.group-preview { width: 100%; height: 42px; gap: 3px; }
 #context-submenu .layout-sample .group-tile { background: var(--accent); opacity: .65; border-radius: 2px; }
+
+/* One outer surface owns the rounding and outline of a split card. */
+.card.split-card > .card-surface { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); position: relative; overflow: hidden; }
+.split-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.split-pane + .split-pane { border-left: 1px solid var(--line); }
+.card.split-card .split-pane .card-open, .card.split-card .split-pane .card-preview, .card.split-card .split-pane .preview-image { border-radius: 0; }
+
+/* Native menus elsewhere (settings, sort) must not inherit glass foregrounds
+   onto a platform-painted white option list, especially on Windows. */
+select option, select optgroup { color: CanvasText; background-color: Canvas; }

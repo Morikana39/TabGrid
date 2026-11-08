@@ -60,7 +60,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         if (action === 'preview') return personalization.preview(...args);
         if (action === 'importSettings') return personalization.import(...args);
         if (action === 'protectedGroups') return personalization.protectedGroups(...args);
-        const allowed = ['close', 'undo', 'restoreSession', 'group', 'ungroup', 'move', 'reorder', 'dropAt', 'rememberOpened', 'lastOpenedSnapshot', 'addLinks', 'returnActive', 'activitySnapshot', 'dropIntoGroup', 'newAfter', 'duplicate', 'siteSoundSnapshot', 'setSiteSound'];
+        const allowed = ['close', 'separateSplit', 'undo', 'restoreSession', 'group', 'ungroup', 'move', 'reorder', 'dropAt', 'rememberOpened', 'lastOpenedSnapshot', 'addLinks', 'returnActive', 'activitySnapshot', 'dropIntoGroup', 'newAfter', 'duplicate', 'siteSoundSnapshot', 'setSiteSound'];
         if (!allowed.includes(action)) throw new Error(tr("Unknown tab action"));
         if (action === 'undo') return actions.undo(args[0], sender.tab?.id ?? null);
         return actions[action](...args);

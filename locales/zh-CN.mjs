@@ -1,5 +1,19 @@
 // UI messages only; never translate user content.
 export default {
+    "Close left view": "关闭左侧视图",
+    "Close right view": "关闭右侧视图",
+    "Split views separated.": "已分离分屏视图。",
+    "A split view partner is no longer available.": "分屏的另一个标签页已不可用。",
+    "The split view tabs changed. Undo can retry when they are compatible.": "分屏标签页已更改。满足条件后可重试撤销。",
+    "Restoring split views requires Chrome 155 or later.": "恢复分屏视图需要 Chrome 155 或更高版本。",
+    "Chrome cannot move an intact split view through this API.": "Chrome 无法通过此 API 移动完整的分屏视图。",
+
+    "Arrange split view": "排列分屏",
+    "Separate views": "分离视图",
+    "Separating views requires Chrome 155 or later.": "分离视图需要 Chrome 155 或更高版本。",
+    "Reverse card views": "反转卡片视图",
+    "Stacked": "上下排列",
+
   "Thumbnail layout": "缩略图布局",
   "Grid": "网格",
   "Side by side": "并排",

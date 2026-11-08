@@ -1,3 +1,4 @@
+import './store-preview.mjs';
 import {PreviewBatch} from '../lib/preview-batch.mjs';
 let previewBatch;
 import {GridLifecycle} from '../lib/grid-lifecycle.mjs';
@@ -22,6 +23,12 @@ const f = fixture([
     {id:8,windowId:2,index:1,title:'Another window reference',url:'https://example.com/window2/other'},
     {id:99,windowId:1,index:6,title:'Tab Grid View',url:gridUrl,active:true}
 ], [{id:7,windowId:1,title:'Research',color:'blue',collapsed:false}], gridUrl);
+if (new URLSearchParams(location.search).has('store')) {
+    const lang=new URLSearchParams(location.search).get('lang');
+    const titles=lang==='zh-CN'?['设计文档','项目计划','研究笔记','参考资料','音乐精选','阅读清单','设计灵感','设计指南']:lang==='ja'?['デザイン資料','プロジェクト計画','リサーチノート','参考記事','音楽コレクション','リーディングリスト','デザインのアイデア','デザインガイド']:['Design documentation','Project plan','Research notes','Reference article','Music collection','Reading list','Design inspiration','Design guide'];
+    for(let id=1;id<=8;id++) await f.api.tabs.update(id,{title:titles[id-1],pinned:false,windowId:1,favIconUrl:new URL('/assets/icons/extension/icon-32.png',location.href).href});
+    await f.api.tabGroups.update(7,{title:lang==='zh-CN'?'研究资料':lang==='ja'?'リサーチ':'Research'});
+}
 if (new URLSearchParams(location.search).has('large')) {
     for (let n = 0; n < 30; n++) await f.api.tabs.create({ windowId: 1, groupId: 7, title: `Group scroll test ${n + 1}`, url: `https://example.com/scroll/${n}` });
 }
@@ -30,6 +37,10 @@ if (new URLSearchParams(location.search).has('previews')) {
     for (let n = 0; n < 5; n++) ids.push((await f.api.tabs.create({ windowId: 1, title: `Design reference ${n + 1}`, url: `https://example.com/design/${n}` })).id);
     const id = await f.api.tabs.group({ tabIds: ids, createProperties: { windowId: 1 } });
     await f.api.tabGroups.update(id, { title: 'Design references', color: 'green' });
+}
+if (new URLSearchParams(location.search).has('split')) {
+    for (const id of [1,2]) await f.api.tabs.update(id,{splitViewId:10,pinned:false});
+
 }
 const event = () => { const listeners=[]; return { addListener(fn){listeners.push(fn);}, emit(...args){listeners.forEach(fn=>fn(...args));} }; };
 const api=f.api;
@@ -74,7 +85,7 @@ const queryTabs=api.tabs.query;api.tabs.query=async options=>(await queryTabs(op
 api.tabs.reload=async()=>{};
 api.tabs.duplicate=async id=>{const {id: _id, ...tab}=await api.tabs.get(id);return api.tabs.create({...tab,index:tab.index+1,active:false});};
 api.tabs.ungroup=async ids=>{for(const id of [ids].flat()) await api.tabs.update(id,{groupId:-1});};
-for(const method of ['create','remove','update','move','group','ungroup']) {
+for(const method of ['create','remove','update','move','group','ungroup','unsplit','createSplit']) {
     const original=api.tabs[method]; api.tabs[method]=async(...args)=>{const result=await original(...args);api.tabs.onUpdated.emit();if(method==='remove')api.sessions.onChanged.emit();if(method==='update'&&args[1]?.active){api.tabs.onActivated.emit({tabId:args[0],windowId:result.windowId});if(!previewBatch?.active)await f.actions.rememberOpened(`tab:${args[0]}`);}return result;};
 }
 for(const method of ['update','move']) {const original=api.tabGroups[method];api.tabGroups[method]=async(...args)=>{const result=await original(...args);api.tabGroups.onUpdated.emit();return result;};}

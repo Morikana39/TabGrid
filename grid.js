@@ -1,3 +1,4 @@
+import {splitMembers} from './lib/split-view.mjs';
 const GROUP_LAYOUTS = {grid:4, split:2, featured:3};
 let groupLayouts = {};
 const groupLayoutKey = id => `tabgridGroupLayout:${privateMode?'private':'regular'}:${id}`;
@@ -221,9 +222,38 @@ async function activate(item, scope, event) {
     const quickView=preferences.closeAfterSwitch&&item.kind==='tab'?features?.snapshot():null;
     await features?.consume(scope);
     if (item.kind === 'group') openGroup(item.group.id);
-    else await run(async () => { await rpc('rememberOpened', item.key); await rpc('switchFromGrid',item.tab.id,{keepOpen:Boolean(undoNotice.entry),view:quickView}); });
+    else await run(async () => { await rpc('rememberOpened', `tab:${item.tab.id}`); await rpc('switchFromGrid',item.tab.id,{keepOpen:Boolean(undoNotice.entry),view:quickView}); });
+}
+function createSplitCard(item, scope) {
+    const card = el('article', 'card split-card');
+    card.dataset.key = item.key; card.dataset.kind = 'tab'; card.itemModel = item;
+    const surface = el('div', 'card-surface');
+    const members = item.members;
+    for (const tab of members) {
+        const single = createCard({kind:'tab',key:`tab:${tab.id}`,tab,windowId:tab.windowId,index:tab.index}, scope);
+        const pane = el('div', 'split-pane');
+        pane.append(...single.querySelector('.card-surface').childNodes);
+        pane.querySelector('.card-menu').remove();
+        pane.querySelector('.card-close').setAttribute('aria-label',tr(surface.children.length?'Close right view':'Close left view'));
+        const check = pane.querySelector('.card-select');
+        check.replaceWith(check.cloneNode());
+        const selection = pane.querySelector('.card-select');
+        selection.addEventListener('click',event=>{event.stopPropagation();selectItem(card.itemModel,scope,event);});
+        if(surface.children.length)selection.remove();
+        pane.addEventListener('click', event => {
+            if (!event.target.closest('.card-menu, .card-close, .card-mute, input')) activate({...card.itemModel,tab}, scope, event);
+        });
+        surface.append(pane);
+    }
+    const menu = button('⋮', event => showMenu(card.itemModel, scope, event), 'card-menu split-menu');
+    menu.dataset.part = 'menu'; menu.setAttribute('aria-label',tr('Arrange split view'));
+    menu.setAttribute('aria-haspopup','menu');menu.setAttribute('aria-expanded','false');surface.lastElementChild.querySelector('.card-info').insertBefore(menu,surface.lastElementChild.querySelector('.card-close'));
+    card.append(surface);
+    card.addEventListener('contextmenu', event => {event.preventDefault();showMenu(card.itemModel,scope,event);});
+    return card;
 }
 function createCard(item, scope) {
+    if (item.splitViewId !== undefined) return createSplitCard(item, scope);
     const data = item.tab || item.group;
     const title = data.title || (item.kind === 'group' ? tr("Untitled group") : data.url || tr("New tab"));
     const card = el('article', `card ${item.kind === 'group' ? 'group-card' : ''}`);
@@ -244,7 +274,7 @@ function createCard(item, scope) {
         preview.classList.add('group-preview');
         preview.dataset.layout = groupLayout(data.id);
         preview.setAttribute('aria-hidden', 'true');
-        for (const tile of groupPreviewTiles(item.members,handoffPreview?.tabId,{sort:$('sort-select').value,capacity:GROUP_LAYOUTS[groupLayout(data.id)],overflow:preferences.groupPreviewOverflow!==false})) {
+        for (const tile of groupPreviewTiles(item.members,handoffPreview?.tabIds,{sort:$('sort-select').value,capacity:GROUP_LAYOUTS[groupLayout(data.id)],overflow:preferences.groupPreviewOverflow!==false})) {
             const cell = el('div', 'group-tile');
             if (tile.tab) {
                 const screenshot = state.screenshots[`screenshot_${tile.tab.id}`];
@@ -291,18 +321,27 @@ function paintCards(container, items, scope) {
         child.inert = true; child.setAttribute('aria-hidden', 'true'); child.remove();
     }
     items.forEach((item, index) => {
-        const signature = JSON.stringify([$('sort-select').value, preferences.groupPreviewOverflow, item.group && groupLayout(item.group.id), preferences.showAddress, preferences.showLastUsed, preferences.showWindow, preferences.showGroup, state.windowOrder, Boolean($(scope === 'group' ? 'group-search' : 'search-input').value.trim()), $('opt-nested').checked, Boolean(features?.hasFilters(scope)), item.tab ? {...item.tab, index: undefined} : item.group, item.members?.map(t => [t.id, t.title, t.url, t.index, t.lastAccessed, state.screenshots[`screenshot_${t.id}`]]), state.screenshots[`screenshot_${item.tab?.id}`], $('opt-all-windows').checked]);
+        const signature = JSON.stringify([$('sort-select').value, preferences.groupPreviewOverflow, item.group && groupLayout(item.group.id), preferences.showAddress, preferences.showLastUsed, preferences.showWindow, preferences.showGroup, state.windowOrder, Boolean($(scope === 'group' ? 'group-search' : 'search-input').value.trim()), $('opt-nested').checked, Boolean(features?.hasFilters(scope)), item.tab ? {...item.tab, index: undefined} : item.group, item.members?.map(t => [t, state.screenshots[`screenshot_${t.id}`]]), state.screenshots[`screenshot_${item.tab?.id}`], $('opt-all-windows').checked]);
         let card = old.get(item.key);
+        if (card && card.classList.contains('split-card') !== (item.splitViewId !== undefined)) {
+            delete card.dataset.key; delete card.dataset.kind;
+            card.inert = true; card.setAttribute('aria-hidden', 'true');
+            card.remove(); card = null;
+        }
         if (!card) card = createCard(item, scope);
         else if (card.dataset.signature !== signature) {
-            Object.assign(card.itemModel, item);
+            card.itemModel = item;
             const next = createCard(card.itemModel, scope);
             // Keep the animated surface alive across native index/title updates.
             card.querySelector('.card-surface').replaceChildren(...next.querySelector('.card-surface').childNodes);
             card.style.cssText = next.style.cssText;
+            card.classList.toggle('split-card',Boolean(item.members && item.splitViewId !== undefined));
+            const surface = card.querySelector('.card-surface');
+            if(next.querySelector('.card-surface').dataset.splitLayout) surface.dataset.splitLayout = next.querySelector('.card-surface').dataset.splitLayout;
+            else delete surface.dataset.splitLayout;
         }
         // Native positions change after a close without changing the card artwork.
-        Object.assign(card.itemModel, item);
+        card.itemModel = item;
         card.dataset.signature = signature;
         card.classList.toggle('last-opened', isLastOpened(item, state.lastOpened));
         const open = card.querySelector('.card-open');
@@ -368,7 +407,7 @@ function scopeGrids(scope) {
     return [...document.querySelectorAll('.grid-container[data-scope]')].filter(c => c.dataset.scope === scope && sortables.has(c) && !c.closest('[hidden],[inert]'));
 }
 const dragGrouping=createDragGrouping({notify:dragNotice,enabled:()=>preferences.dragGrouping,canReorder:card=>canReorder(card.parentElement),dialog:$('group-dialog'),feedback:dropFeedback,handoff(card,groupId){
-    handoffPreview={tabId:card.itemModel.tab.id,groupId};updateHandoffPreview(groupId);
+    handoffPreview={tabIds:card.itemModel.members?.map(tab=>tab.id)||[card.itemModel.tab.id],groupId};updateHandoffPreview(groupId);
     // Move only Sortable's fallback; its live slot remains owned by Sortable.
     const ghost=Sortable.ghost;if(ghost){const r=ghost.getBoundingClientRect(),matrix=new DOMMatrix(getComputedStyle(ghost).transform);document.body.append(ghost);Object.assign(ghost.style,{position:'fixed',left:`${r.left-matrix.e}px`,top:`${r.top-matrix.f}px`});}
     groupTransition.handoff();
@@ -436,7 +475,7 @@ function registerGrid(container, scope) {
             if(!evt.to.dataset.destination&&(direct?.target||(direct?.ungroup&&!(direct.handedOff&&evt.to!==evt.from)))){
                 const item=evt.item.itemModel,ids=item.members?.map(t=>t.id)||[item.tab.id];
                 const target=direct.target;
-                if(target?.destination==='new'){createGroupDialog([...new Set([...ids,target.targetId])],target.windowId);await refresh();}
+                if(target?.destination==='new'){createGroupDialog([...new Set([...ids,...(target.targetIds || [target.targetId])])],target.windowId);await refresh();}
                 else await run(()=>rpc('dropIntoGroup',ids,target?.destination??'ungroup',target?.windowId??(item.tab||item.group).windowId),target?tr("Tabs grouped."):tr("Tab ungrouped."));
                 return;
             }
@@ -461,8 +500,10 @@ function registerGrid(container, scope) {
             if(target===source&&evt.oldIndex===evt.newIndex){syncSelection();if(refreshPending)scheduleRefresh();return;}
             await run(async()=>{
                 if(target!==source){
-                    if(direct?.handedOff)await rpc('dropIntoGroup',[evt.item.itemModel.tab.id],'ungroup',gridWindow(target));
-                    const cards=[...target.children].filter(c=>c.dataset.key&&c.itemModel),index=cards.indexOf(evt.item),following=cards[index+1],previous=cards[index-1];
+                    if(direct?.handedOff)await rpc('dropIntoGroup',evt.item.itemModel.members?.map(t=>t.id)||[evt.item.itemModel.tab.id],'ungroup',gridWindow(target));
+                    const draggedIds=new Set(evt.item.itemModel.members?.map(tab=>tab.id)||[evt.item.itemModel.tab.id]);
+                    const removesSourceGroup=direct?.handedOff && state.tabs.filter(tab=>tab.groupId===direct.groupId).every(tab=>draggedIds.has(tab.id));
+                    const cards=[...target.children].filter(c=>c.dataset.key&&c.itemModel && !(removesSourceGroup&&c.dataset.key===`group:${direct.groupId}`)),index=cards.indexOf(evt.item),following=cards[index+1],previous=cards[index-1];
                     const anchor=targetCanReorder?following?.dataset.key||previous?.dataset.key||null:null;
                     return rpc('dropAt',{keys:[evt.item.dataset.key],windowId:gridWindow(target),pinned:gridPinned(target),anchor,after:!following&&Boolean(previous)});
                 }
@@ -470,7 +511,7 @@ function registerGrid(container, scope) {
                 const groupFilter=features?.filters[scope].groups;
                 const groupId=scope==='group'?state.groupId:groupFilter?.length===1?groupFilter[0]:null;
                 if(groupId!==null){
-                    const allKeys=state.tabs.filter(t=>t.groupId===groupId).sort((a,b)=>a.index-b.index).map(t=>`tab:${t.id}`);keys=mergeVisibleOrder(allKeys,keys);
+                    const allKeys=openItems(state.tabs,state.groups,{windowId:gridWindow(target),groupId}).map(item=>item.key);keys=mergeVisibleOrder(allKeys,keys);
                 }else{
                     const allKeys=openItems(state.tabs,state.groups,{windowId:gridWindow(target)}).filter(item=>Boolean(item.tab?.pinned)===gridPinned(target)).map(item=>item.key);keys=mergeVisibleOrder(allKeys,keys);
                 }
@@ -551,6 +592,10 @@ function render(options) {
     $('recent-section').hidden = privateMode || !['recent', 'all'].includes(state.view) || (state.view === 'all' && features?.hasFilters('root'));
     $('tab-count').textContent = `(${state.tabs.filter(t => $('opt-all-windows').checked || t.windowId === state.windowId).length})`;
     const inactive = privateMode ? new Set() : inactiveTabIds(state.tabs, preferences.inactiveDays, state.returned, Date.now(), { sites: preferences.idleSites, groups: protectedGroups });
+    for (const tab of state.tabs) {
+        const pair = splitMembers(tab,state.tabs);
+        if (pair.some(member=>!inactive.has(member.id))) pair.forEach(member=>inactive.delete(member.id));
+    }
     const shown = state.tabs.filter(t => state.view === 'inactive' ? inactive.has(t.id) : state.view === 'all' || !inactive.has(t.id));
     const items = openItems(shown, state.groups, { windowId: state.windowId, allWindows: $('opt-all-windows').checked, query, nested: $('opt-nested').checked, showGroups: $('opt-groups').checked, sort: $('sort-select').value, preferences, filters: features?.filters.root });
     const allWindows = $('opt-all-windows').checked;
@@ -677,7 +722,7 @@ const undoNotice = new UndoNotice({ duration: () => preferences.undoMs, change(e
     const toast = $('undo-toast');
     const focused = toast.contains(document.activeElement);
     undoPopover.set(Boolean(entry));
-    if (entry) $('undo-message').textContent = entry.kind==='grouping'?tr("Tab grouping changed."):tr("{0} closed tab(s)", [entry.tabs.filter(t => t.state === 'closed').length]);
+    if (entry) $('undo-message').textContent = entry.kind==='split'?tr('Split views separated.'):entry.kind==='grouping'?tr("Tab grouping changed."):tr("{0} closed tab(s)", [entry.tabs.filter(t => t.state === 'closed' || t.state === 'restored').length]);
     else if (focused) ($('action-dialog').open ? $('action-cancel') : $('group-dialog').open ? $('group-done') : $('search-input')).focus({ preventScroll: true });
     placeUndo();
 } });
@@ -799,6 +844,11 @@ function menuSubmenu(menu, label, entries, disabled = false) {
         close:()=>{if(submenuOpener===trigger)closeSubmenu();}
     });
     trigger.addEventListener('keydown',event=>{if(event.key==='ArrowRight'){event.preventDefault();event.stopPropagation();hover.reset();submenuHover=hover;openSubmenu(trigger,entries,true);}});
+    trigger.addEventListener('click',()=>{
+        const opened=submenuOpener===trigger&&$('context-submenu').matches(':popover-open');
+        hover.reset();
+        if(opened)closeSubmenu();else{submenuHover=hover;openSubmenu(trigger,entries,false);}
+    });
     submenuHovers.add(hover);
     menuContent(menu).append(trigger);
 }
@@ -829,6 +879,15 @@ function populateTabActions(menu, ids, scope, item = null, { insideGroup = false
         }),null,{layout,selected:groupLayout(item.group.id)===layout}]));
     }
     else add(tr("New Tab After Selected"), () => run(async () => { const tab=await rpc('newAfter', ids, false); await finishNewTab(tab);return tab; }), { disabled: !oneWindow });
+    if (item?.splitViewId !== undefined) {
+        menuSubmenu(menu,tr('Arrange split view'),()=>{
+            return [
+                [tr('Separate views'),()=>run(()=>rpc('separateSplit',item.splitViewId))],null,
+                [tr('Close left view'),()=>closeTabs([item.members[0].id])],
+                [tr('Close right view'),()=>closeTabs([item.members[1].id])]
+            ];
+        });
+    }
     menuSubmenu(menu, members.length > 1 ? tr("Add Tabs to Group") : tr("Add Tab to Group"), () => {
         const groups = state.groups.filter(g => g.windowId === members[0]?.windowId);
         return [
@@ -838,7 +897,7 @@ function populateTabActions(menu, ids, scope, item = null, { insideGroup = false
         ];
     }, !oneWindow || members.some(t => t.pinned));
     if (members.some(t => t.groupId !== -1)) add(tr("Ungroup"), () => run(() => rpc('ungroup',ids), tr("Tabs ungrouped.")));
-    menuSubmenu(menu, members.length > 1 ? tr("Move Tabs to Another Window") : tr("Move Tab to Another Window"), () => windowEntries(ids));
+    menuSubmenu(menu, members.length > 1 ? tr("Move Tabs to Another Window") : tr("Move Tab to Another Window"), () => windowEntries(ids), members.some(tab=>tab.splitViewId>=0));
     if (!group) {
         menuDivider(menu);
         add(tr("Reload"), () => run(async () => { for (const tab of members) { if (!privateMode && /^https?:/.test(tab.url || '')) await rpc('preview', 'clear', tab.id); await chrome.tabs.reload(tab.id); } }));
@@ -859,7 +918,7 @@ function populateTabActions(menu, ids, scope, item = null, { insideGroup = false
         menuDivider(menu);
         add(members.length > 1 ? tr("Add Tabs to Reading List") : tr("Add Tab to Reading List"), () => addLinks(ids, 'readingList', title));
     }
-    if (!privateMode && item?.tab && /^https?:/.test(item.tab.url || '')) {
+    if (!privateMode && item?.tab && item.splitViewId === undefined && /^https?:/.test(item.tab.url || '')) {
         menuDivider(menu);
         menuContent(menu).append(el('div','menu-name',tr("Preview")));
         const excluded = siteMatches(item.tab.url, preferences.previewSites);
@@ -910,7 +969,7 @@ function showSelectionMenu(scope, event) {
 function showMenu(item, scope, event, { insideGroup = false } = {}) {
     const menu = prepareMenu(scope, event, item.key); if (!menu) return;
     menu.setAttribute('aria-label', item.kind === 'group' ? tr("Group actions") : tr("Tab actions"));
-    const ids = item.kind === 'group' ? (insideGroup ? actionTabs(scope) : state.tabs).filter(t => t.groupId === item.group.id).map(t => t.id) : [item.tab.id];
+    const ids = item.kind === 'group' ? (insideGroup ? actionTabs(scope) : state.tabs).filter(t => t.groupId === item.group.id).map(t => t.id) : item.members?.map(tab => tab.id) || [item.tab.id];
     if (item.kind === 'group') {
         const header = el('div', 'menu-group-header');
         const input = el('input'); input.type = 'text'; input.value = item.group.title || ''; input.placeholder = tr("Name this group"); input.setAttribute('aria-label', tr("Group name"));
@@ -923,7 +982,7 @@ function showMenu(item, scope, event, { insideGroup = false } = {}) {
             dot.style.setProperty('--dot', value); dot.setAttribute('aria-label', color); dot.title = color; dot.setAttribute('role', 'menuitemradio'); dot.setAttribute('aria-checked', String(item.group.color === color)); palette.append(dot);
         }
         header.append(input, palette); menuContent(menu).append(header);
-    } else menuContent(menu).append(el('div', 'menu-name', item.tab.title || item.tab.url || 'Tab'));
+    } else menuContent(menu).append(el('div', 'menu-name', item.members?.map(tab=>tab.title || tab.url).join(' · ') || item.tab.title || item.tab.url || 'Tab'));
     populateTabActions(menu, ids, scope, item, { insideGroup }); positionMenu(menu, event);
 }
 function positionMenu(menu, event) {

@@ -32,6 +32,19 @@ html[data-visual-style=glass] :is(button,input,select):active:where(:not(:disabl
 html[data-visual-style=glass] :is([aria-selected=true],[aria-pressed=true]):not(.menu-colors button):not(.card-open) { background-color: var(--liquid-pressed-fill) !important; }
 html[data-visual-style=glass] :is(button.primary,input[role=switch]:checked) { background-color: color-mix(in srgb,var(--accent) 30%,transparent) !important; color: var(--text) !important; }
 html[data-visual-style=glass] button.danger:is(:hover,:active,:focus-visible) { background-color: color-mix(in srgb,var(--danger) 18%,transparent) !important; color: var(--danger) !important; }
+/* The menu owns the glass surface; its action rows are not individual panels. */
+html[data-visual-style=glass] :is(#page-menu,#context-menu,#context-submenu) > .menu-scroll > button {
+    background: transparent !important; box-shadow: none !important; border-color: transparent !important;
+}
+html[data-visual-style=glass] :is(#page-menu,#context-menu,#context-submenu) > .menu-scroll > button:is(:hover,:focus-visible):not(:disabled) {
+    background-color: var(--liquid-hover-fill) !important;
+}
+html[data-visual-style=glass] :is(#page-menu,#context-menu,#context-submenu) > .menu-scroll > button:is(:active,[aria-expanded=true]):not(:disabled) {
+    background-color: var(--liquid-pressed-fill) !important;
+}
+html[data-visual-style=glass] :is(#page-menu,#context-menu,#context-submenu) > .menu-scroll > button.danger:is(:hover,:focus-visible,:active):not(:disabled) {
+    background-color: color-mix(in srgb,var(--danger) 18%,transparent) !important;
+}
 html[data-visual-style=glass] .filter-disclosure > .filter-toggle {
     display: flex; align-items: center; width: fit-content; min-height: 44px;
     padding: 10px 17px; gap: 9px; border: 1px solid color-mix(in srgb,var(--text) 15%,transparent);
