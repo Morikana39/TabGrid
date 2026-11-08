@@ -26,7 +26,9 @@ A local Chrome extension that displays tab and tab group thumbnails in one visua
 
 ## Install
 
-Requires **Chrome 120 or later**.
+Requires **Chrome 120 or later**. Visit [TabGrid’s official Chrome Web Store page](https://chromewebstore.google.com/detail/tabgrid/njanhklepohgnhaklnbijfmlclmjiahp) in Chrome and click **Add to Chrome**.
+
+Alternatively, install it manually:
 
 1. [**Click here**](https://github.com/Morikana39/TabGrid/releases/latest/download/TabGrid.zip) to download the latest version, or open the [Releases page](https://github.com/Morikana39/TabGrid/releases/latest) and choose **TabGrid.zip** under **Assets**.
 2. Extract `TabGrid.zip` and keep the extracted folder somewhere permanent.
@@ -37,7 +39,7 @@ Requires **Chrome 120 or later**.
 
 For illustrated instructions, see [Chrome’s installation guide](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked).
 
-**Updating:** download the latest `TabGrid.zip` from the release link above, extract it, and replace the existing installation folder. Then click **Reload** for TabGrid at `chrome://extensions`, then reopen TabGrid.
+**Updating:** If installed from the Chrome Web Store, TabGrid updates automatically in the background. For a manual installation, download the latest `TabGrid.zip` from the release link above, extract it, and replace the files in your existing installation folder. Click **Reload** for TabGrid at `chrome://extensions`, then reopen TabGrid.
 
 The release package contains runtime files and license notices, excluding development fixtures, screenshots, source maps, and unused dependency files. To build it from source, see [Development](#development).
 

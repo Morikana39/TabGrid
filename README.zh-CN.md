@@ -24,7 +24,9 @@
 
 ## 安装
 
-需要 **Chrome 120 或更新版本**。
+需要 **Chrome 120 或更新版本**。在 Chrome 中访问 [TabGrid 的 Chrome 应用商店官方页面](https://chromewebstore.google.com/detail/tabgrid/njanhklepohgnhaklnbijfmlclmjiahp)，点击**添加至 Chrome**。
+
+也可以手动安装：
 
 1. [**点击这里**](https://github.com/Morikana39/TabGrid/releases/latest/download/TabGrid.zip)下载最新版本，或打开[发布页面](https://github.com/Morikana39/TabGrid/releases/latest)，在 **Assets** 中选择 **TabGrid.zip**。
 2. 解压 `TabGrid.zip`，并将解压后的文件夹放在长期保留的位置。
@@ -35,7 +37,7 @@
 
 图文说明见 [Chrome 安装指南](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)。
 
-**更新**：从上方发布链接下载最新的 `TabGrid.zip`，解压并替换现有安装文件夹。然后在 `chrome://extensions` 中为 TabGrid 点击**重新加载**，再重新打开 TabGrid。
+**更新**：通过 Chrome 应用商店安装的 TabGrid 会在后台自动更新。如果是手动安装，请从上方发布链接下载最新的 `TabGrid.zip`，解压并替换现有安装文件夹中的文件。在 `chrome://extensions` 中为 TabGrid 点击**重新加载**，然后重新打开 TabGrid。
 
 发布包包含运行文件及许可声明，不包含开发测试素材、截图、源码映射和未使用的依赖文件。如需从源码打包，请参阅[开发](#开发)。
 

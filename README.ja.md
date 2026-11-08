@@ -24,7 +24,9 @@
 
 ## インストール
 
-**Chrome 120 以降**が必要です。
+**Chrome 120 以降**が必要です。Chrome で [TabGrid の Chrome ウェブストア公式ページ](https://chromewebstore.google.com/detail/tabgrid/njanhklepohgnhaklnbijfmlclmjiahp)を開き、**Chrome に追加**をクリックしてください。
+
+手動でインストールする場合は、次の手順に従ってください。
 
 1. [**こちら**](https://github.com/Morikana39/TabGrid/releases/latest/download/TabGrid.zip)から最新版をダウンロードするか、[リリースページ](https://github.com/Morikana39/TabGrid/releases/latest) の **Assets** から **TabGrid.zip** を選びます。
 2. `TabGrid.zip` を展開し、フォルダを継続して使用する場所に保存します。
@@ -35,7 +37,7 @@
 
 画像付きの手順は [Chrome のガイド](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)をご覧ください。
 
-**更新**：上のリリースリンクから最新の `TabGrid.zip` をダウンロードして展開し、既存のインストール先フォルダを置き換えます。その後、`chrome://extensions` で TabGrid の**再読み込み**をクリックし、TabGrid を開き直してください。
+**更新**：Chrome ウェブストアからインストールした TabGrid は、バックグラウンドで自動更新されます。手動でインストールした場合は、上のリリースリンクから最新の `TabGrid.zip` をダウンロードして展開し、既存のインストール先フォルダ内のファイルを置き換えてください。`chrome://extensions` で TabGrid の**再読み込み**をクリックし、TabGrid を開き直してください。
 
 リリースパッケージには実行用ファイルとライセンス通知が含まれ、開発用のテスト素材、スクリーンショット、ソースマップ、未使用の依存ファイルは含まれません。ソースから作成する場合は[開発](#開発)をご覧ください。
 
