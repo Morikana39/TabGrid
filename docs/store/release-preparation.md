@@ -96,7 +96,6 @@ Remote code: No. JavaScript, libraries, and fonts are bundled locally. Custom ba
 | <all_urls> | Capture previews across arbitrary user-opened websites and inject the local activity notifier on eligible HTTP(S) pages. Pages are not predetermined; browser restrictions, site exclusions, and capture preferences still apply. |
 | bookmarks (optional) | Save user-selected tabs as Chrome bookmarks when requested. |
 | readingList (optional) | Add user-selected tabs to Chrome Reading List when requested. |
-| contentSettings (optional) | Apply or remove site-sound rules when the user chooses site muting. |
 
 Data-handling review notes: tab URLs/titles and recently closed entries are browsing-related data; screenshots contain website content and may incidentally include sensitive information. Activity event signals are used for local capture scheduling. Optional search queries and user-selected backgrounds are stored locally. No developer telemetry, transmission endpoint, sale, or advertising use was found. The maintainer must review the dashboard's exact category definitions and certify the disclosures; do not claim the extension never accesses user data simply because it does not transmit it.
 

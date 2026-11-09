@@ -1,3 +1,4 @@
+import { isTabMuted, setTabMuted } from './lib/tab-sound.mjs';
 import {splitMembers} from './lib/split-view.mjs';
 const GROUP_LAYOUTS = {grid:4, split:2, featured:3};
 let groupLayouts = {};
@@ -30,7 +31,7 @@ import { setupGridPersonalization } from './lib/grid-personalization.mjs';
 import { isLastOpened, groupPreviewTiles } from './lib/tab-focus.mjs';
 import Sortable, { AutoScroll } from './node_modules/sortablejs/modular/sortable.core.esm.js';
 import autoAnimate from './node_modules/@formkit/auto-animate/index.mjs';
-import { windowLabel, relativeTabIds, siteOrigins, anchoredMenuLayout } from './lib/tab-menu.mjs';
+import { windowLabel, relativeTabIds, anchoredMenuLayout } from './lib/tab-menu.mjs';
 import { containMenuFocus } from './lib/menu-focus.mjs';
 import { gridMotion } from './lib/tab-motion.mjs';
 import { mergeVisibleOrder, keyFor, isGridUrl, matches, selectedTabs, openItems, recentItems, filterRecentItems } from './lib/tab-model.mjs';
@@ -241,7 +242,7 @@ function createSplitCard(item, scope) {
         selection.addEventListener('click',event=>{event.stopPropagation();selectItem(card.itemModel,scope,event);});
         if(surface.children.length)selection.remove();
         pane.addEventListener('click', event => {
-            if (!event.target.closest('.card-menu, .card-close, .card-mute, input')) activate({...card.itemModel,tab}, scope, event);
+            if (!event.target.closest('.card-menu, .card-close, .card-mute, .card-pin, input')) activate({...card.itemModel,tab}, scope, event);
         });
         surface.append(pane);
     }
@@ -264,7 +265,23 @@ function createCard(item, scope) {
     if (item.tab) info.append(image(favicon(item.tab), 'favicon'));
     else { const dot = el('span', 'group-color-dot'); dot.setAttribute('aria-hidden', 'true'); info.append(dot); }
     const name = el('span', 'card-title', title); name.title = title; info.append(name);
-    if(item.tab?.mutedInfo?.muted){const mute=button('',e=>{e.stopPropagation();run(()=>chrome.tabs.update(card.itemModel.tab.id,{muted:false}),tr("Tab unmuted."));},'card-mute');mute.dataset.part='mute';mute.setAttribute('aria-label',tr("Unmute {0}",[title]));mute.title=tr("Unmute tab");info.append(mute);}
+    if (item.tab?.pinned) {
+        const pin = button('', e => {
+            e.stopPropagation();
+            run(async () => {
+                const tab = card.itemModel.tab;
+                const pair = splitMembers(tab, state.tabs);
+                for (const member of pair.length ? pair : [tab]) await chrome.tabs.update(member.id, {pinned:false});
+            });
+        }, 'card-pin');
+        pin.dataset.part = 'pin'; pin.title = tr("Unpin");
+        pin.setAttribute('aria-label', `${tr("Unpin")}: ${title}`); info.append(pin);
+    }
+    if (item.tab && isTabMuted(item.tab)) {
+        const mute = button('', e => { e.stopPropagation(); run(() => setTabMuted(chrome, [card.itemModel.tab.id], {muted:false, incognito:privateMode, gridUrl}), tr("Tab unmuted.")); }, 'card-mute');
+        mute.dataset.part = 'mute'; mute.setAttribute('aria-label', tr("Unmute {0}", [title]));
+        mute.title = tr("Unmute tab"); info.append(mute);
+    }
     const menu = button('⋮', e => showMenu(item, scope, e), 'card-menu'); menu.setAttribute('aria-label', tr("Actions for {0}", [title])); menu.dataset.part = 'menu'; menu.setAttribute('aria-haspopup', 'menu'); menu.setAttribute('aria-expanded', 'false');
     const close = button('×', () => item.kind === 'group' ? confirmClose(item.members.map(t => t.id), tr("Close “{0}”?", [title])) : closeTabs([item.tab.id]), 'card-close'); close.setAttribute('aria-label', tr("Close {0}", [title])); close.dataset.part = 'close'; info.append(menu, close);
     const open = el('button', 'card-open'); open.type = 'button'; open.dataset.part = 'open'; open.setAttribute('aria-label', `${item.kind === 'group' ? tr("Open group") : tr("Switch to")} ${title}`);
@@ -293,7 +310,7 @@ function createCard(item, scope) {
     }
     const details = [];
     if (item.tab) {
-        if (data.pinned) details.push(tr("Pinned")); if (data.audible) details.push(tr("Playing audio")); if (data.mutedInfo?.muted) details.push(tr("Muted"));
+        if (data.pinned) details.push(tr("Pinned")); if (data.audible) details.push(tr("Playing audio")); if (isTabMuted(data)) details.push(tr("Muted"));
         if (preferences.showAddress) details.push(domain(data.url));
         if (preferences.showGroup && scope === 'root' && $('search-input').value.trim() && $('opt-nested').checked && data.groupId !== -1) details.push(state.groups.find(g=>g.id===data.groupId)?.title || tr("Untitled group"));
         if (preferences.showLastUsed) details.push(Number.isFinite(data.lastAccessed) && data.lastAccessed > 0 ? tr("Last used {0}", [new Date(data.lastAccessed).toLocaleString(currentLanguage())]) : tr("Last used unavailable"));
@@ -301,7 +318,7 @@ function createCard(item, scope) {
     if (preferences.showWindow) details.push(numberedWindow(data.windowId, state.windowOrder));
     open.append(preview, el('div', 'card-meta', details.join(' · ')));
     const surface = el('div', 'card-surface'); surface.append(info, open); card.append(surface);
-    card.addEventListener('click', e => { if (!e.target.closest('.card-menu, .card-close, .card-mute, input')) activate(card.itemModel, scope, e); });
+    card.addEventListener('click', e => { if (!e.target.closest('.card-menu, .card-close, .card-mute, .card-pin, input')) activate(card.itemModel, scope, e); });
     card.addEventListener('contextmenu', e => {
         e.preventDefault();
         if (selectionActive(selecting[scope], selections[scope])) {
@@ -431,7 +448,7 @@ function registerGrid(container, scope) {
         sort:canReorder(container),
         animation: 0, forceFallback: true, fallbackOnBody: scope !== 'group', supportPointer: false, draggable: '.card[data-key]',
         fallbackTolerance: 6, delay: 250, delayOnTouchOnly: !mouseSwipeEnabled(preferences), touchStartThreshold: 2,
-        filter(event) { return isCardReturning(event.target.closest('.card[data-key]')) || Boolean(event.target.closest('.card-menu, .card-close, .card-mute, input')) || !canDrag(container); },
+        filter(event) { return isCardReturning(event.target.closest('.card[data-key]')) || Boolean(event.target.closest('.card-menu, .card-close, .card-mute, .card-pin, input')) || !canDrag(container); },
         preventOnFilter: false, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', dragClass: 'sortable-drag',
         onMove(evt) {
             const direction=!evt.to.dataset.destination?dragGrouping.sortMove(evt):undefined;
@@ -896,7 +913,7 @@ function populateTabActions(menu, ids, scope, item = null, { insideGroup = false
             ...groups.map(g => [g.title || tr("Untitled group"), () => run(() => rpc('group', ids, g.id), tr("Tabs grouped.")),g])
         ];
     }, !oneWindow || members.some(t => t.pinned));
-    if (members.some(t => t.groupId !== -1)) add(tr("Ungroup"), () => run(() => rpc('ungroup',ids), tr("Tabs ungrouped.")));
+    if (members.some(t => t.groupId !== -1)) add(group ? tr("Ungroup") : tr("Remove from group"), () => run(() => rpc('ungroup',ids), tr("Tabs ungrouped.")));
     menuSubmenu(menu, members.length > 1 ? tr("Move Tabs to Another Window") : tr("Move Tab to Another Window"), () => windowEntries(ids), members.some(tab=>tab.splitViewId>=0));
     if (!group) {
         menuDivider(menu);
@@ -904,15 +921,11 @@ function populateTabActions(menu, ids, scope, item = null, { insideGroup = false
         add(tr("Duplicate"), () => run(() => rpc('duplicate', ids)));
         const pinned = members.length > 0 && members.every(t => t.pinned);
         add(pinned ? tr("Unpin") : tr("Pin"), () => run(async () => { for (const tab of members) await chrome.tabs.update(tab.id, { pinned: !pinned }); }));
-        let muted = false;
-        const sound = add(tr("Mute Site"), async () => {
-            let permission;
-            try { permission = await chrome.permissions.request({ permissions: ['contentSettings'] }); }
-            catch (error) { announce(translateError(error.message), true); return; }
-            if (!permission) { announce(tr("Site sound permission was not granted."), true); return; }
-            await run(async () => { const current = await rpc('siteSoundSnapshot', ids); return rpc('setSiteSound', ids, !(current?.muted ?? muted)); }, tr("Site sound updated."));
-        }, { disabled: !siteOrigins(members).length });
-        rpc('siteSoundSnapshot', ids).then(value => { if (sound.isConnected && value) { muted = value.muted; sound.textContent = muted ? tr("Unmute Site") : tr("Mute Site"); } }).catch(() => {});
+        const muted = members.length > 0 && members.every(isTabMuted);
+        const soundLabel = muted
+            ? (members.length > 1 ? tr("Unmute tabs") : tr("Unmute tab"))
+            : (members.length > 1 ? tr("Mute tabs") : tr("Mute tab"));
+        add(soundLabel, () => run(() => setTabMuted(chrome, ids, {incognito:privateMode, gridUrl})));
     }
     if (!privateMode) {
         menuDivider(menu);
@@ -1282,6 +1295,9 @@ document.addEventListener('pointerup', releaseCardPointer, true);
 document.addEventListener('pointercancel', releaseCardPointer, true);
 window.addEventListener('blur', releaseCardPointer);
 window.addEventListener('focus', scheduleRefresh);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleRefresh(); });
+chrome.permissions?.onAdded?.addListener(scheduleRefresh);
+chrome.permissions?.onRemoved?.addListener(scheduleRefresh);
 
 const customBackground = mountBackground(chrome);
 const appearanceMedia = matchMedia('(prefers-color-scheme: dark)');

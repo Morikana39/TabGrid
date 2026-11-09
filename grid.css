@@ -173,7 +173,7 @@ html { scrollbar-gutter: stable; }
 .card-info { padding: 6px 8px; }
 .card-menu, .card-close { color: inherit; }
 .card-menu { font-size: 20px; line-height: 1; }
-html:not(.menu-open) .card-menu:hover, html:not(.menu-open) .card-close:hover { background: color-mix(in srgb, var(--frame) 70%, var(--surface)); color: var(--frame-text); }
+html:not(.menu-open) :is(.card-menu, .card-close, .card-mute, .card-pin):hover { background: color-mix(in srgb, var(--frame) 70%, var(--surface)); color: var(--frame-text); }
 .card-open, .card-open:hover { background: transparent; color: inherit; }
 .card-open { width: calc(100% - 12px); margin: 0 6px; }
 .card-preview { border-radius: 6px; }

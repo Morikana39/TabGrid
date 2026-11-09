@@ -218,7 +218,7 @@ html[data-visual-style=glass] .card-preview { border-radius: 15px; background: c
 html[data-visual-style=glass] .group-preview { background: transparent; gap: 5px; }
 html[data-visual-style=glass] .group-tile { border-radius: 10px; }
 html[data-visual-style=glass] :is(.preview-favicon,.tile-favicon) { border-radius: 7px; box-shadow: 0 1px 0 var(--glass-light),0 2px 5px var(--glass-shadow); }
-html[data-visual-style=glass] :is(.card-menu,.card-close) { border-radius: 50%; }
+html[data-visual-style=glass] :is(.card-menu,.card-close,.card-mute,.card-pin) { border-radius: 50%; }
 html[data-visual-style=glass] :is(dialog,#context-menu,#context-submenu,#page-menu,.filter-picker-list,.search-history,#undo-toast) {
     border-color: var(--glass-edge); background-color: var(--glass-panel); background-image: var(--glass-sheen);
     border-radius: 22px; box-shadow: var(--material-shadow),0 16px 48px -16px var(--glass-shadow);

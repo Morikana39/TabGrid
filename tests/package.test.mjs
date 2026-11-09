@@ -12,7 +12,7 @@ test('release packaging preserves credits and project license with Unix or Windo
             async function write(name,text){const path=join(root,name);await mkdir(dirname(path),{recursive:true});await writeFile(path,text);}
             for(const directory of ['assets','_locales','locales','scripts'])await mkdir(join(root,directory),{recursive:true});
             await copyFile(new URL('../scripts/package.mjs',import.meta.url),join(root,'scripts/package.mjs'));
-            for(const name of ['grid.html','background.js','preview-activity.js','tileIcon.png','node_modules/sortablejs/LICENSE','node_modules/@formkit/auto-animate/LICENSE','node_modules/@liquid-dom/layout/LICENSE','docs/chrome-grid-interaction-research.md'])await write(name,'fixture');
+            for(const name of ['grid.html','background.js','preview-activity.js','tileIcon.png','node_modules/sortablejs/LICENSE','node_modules/@formkit/auto-animate/LICENSE','node_modules/@liquid-dom/layout/LICENSE','docs/chrome-grid-interaction-research.md','docs/chrome-action-terminology.md'])await write(name,'fixture');
             await write('manifest.json','{}');await write('LICENSE','MIT License\nFixture copyright\n');
             await write('README.md',['# Fixture','','## Credits','','Original attribution.','','## Development','','Development-only content.'].join(newline));
             const result=spawnSync(process.execPath,[join(root,'scripts/package.mjs')],{encoding:'utf8'});

@@ -83,6 +83,7 @@ TabGrid 采用 [MIT 许可证](LICENSE)。随附的第三方库、字体和图�
 - [Liquid DOM](https://github.com/AndrewPrifer/liquid-dom)：玻璃拟态控件、筛选面板、菜单、对话框及滑块的 WebGPU 背景折射和弹簧动画（[MIT](assets/licenses/liquid-dom.txt)）。使用本地图片纹理，无需实验性 HTML-in-Canvas 标志；无 WebGPU 或自定义背景时使用 CSS 回退。
 - [Geist / Geist Mono](https://github.com/vercel/geist-font)、[Outfit](https://github.com/Outfitio/Outfit-Fonts)、[Plus Jakarta Sans](https://github.com/tokotype/PlusJakartaSans)、[Newsreader](https://github.com/productiontype/Newsreader)：离线字体（SIL Open Font License）。
 - [Chromium / Android 版 Chrome](https://chromium.googlesource.com/chromium/src/)：标签页重叠分组、排序边界及分组面板动画的行为参考。见[参考与桌面适配说明](docs/chrome-grid-interaction-research.md)及 [Chromium 许可](https://chromium.googlesource.com/chromium/src/+/main/LICENSE)。
+- 与浏览器等效的操作采用 Chromium 的本地化标签。见[术语对应表](docs/chrome-action-terminology.md)和[随附的 BSD 许可](assets/licenses/chromium.txt)。
 - [Leonxlnx 的 taste-skill](https://github.com/Leonxlnx/taste-skill)：前端布局及样式参考（[MIT](assets/licenses/taste-skill.txt)）。
 
 视觉灵感来自 [Flat UI](https://github.com/designmodo/Flat-UI)、[liquidGL](https://github.com/naughtyduk/liquidGL)、[neumorphism](https://github.com/adamgiebl/neumorphism) 和 [clay.css](https://github.com/codeAdrian/clay.css)。风格由 TabGrid 自有 CSS 实现，未包含这些项目的运行库。

@@ -82,7 +82,7 @@ h3 { font-size: 14px; font-weight: 550; letter-spacing: -.01em; }
 .card-title { font-size: 12px; font-weight: 550; letter-spacing: -.015em; }
 .card-info .favicon { width: 15px; height: 15px; }
 .group-color-dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 50%; background: var(--group-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 45%, transparent); margin: 0 4px 0 3px; }
-.card-menu, .card-close { min-height: 24px; min-width: 22px; padding: 1px 4px; border-radius: 5px; font-weight: 400; }
+.card-menu, .card-close, .card-mute, .card-pin { min-height: 24px; min-width: 22px; padding: 1px 4px; border-radius: 5px; font-weight: 400; }
 .card-close { font-size: 17px; line-height: 1; }
 .card-menu { font-size: 18px; line-height: 1; }
 .card-open { background: transparent; border: 0; width: calc(100% - 12px); margin-inline: 6px; border-radius: 0; }
@@ -202,7 +202,7 @@ html.menu-open .card button:hover { background: transparent; border-color: trans
     .card-info { padding: 3px 5px; gap: 3px; min-height: 29px; }
     .card-info .favicon { width: 13px; height: 13px; }
     .card-title { font-size: 11px; }
-    .card-menu, .card-close { min-width: 18px; padding: 1px 3px; }
+    .card-menu, .card-close, .card-mute, .card-pin { min-width: 18px; padding: 1px 3px; }
     .card-meta { font-size: 10px; padding: 5px 2px; }
     .card-preview .fallback { width: 28px; height: 28px; }
     .group-dialog { width: calc(100vw - 24px); height: 90dvh; }

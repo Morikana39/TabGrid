@@ -230,7 +230,15 @@ html body .group-exit-copy :is(.group-feedback,.drag-tip) { background: none; bo
 html body .search-history .history-remove { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; min-height: 28px; padding: 0; border: 0; background: none; box-shadow: none; }
 .history-remove::before { content: ''; width: 18px; height: 18px; background: currentColor; mask: url("assets/icons/material/close.svg") center / contain no-repeat; }
 .menu-scroll,.filter-picker-scroll,.drawer-list,.settings-tabs,.settings-panels { overscroll-behavior: none; }
-.card-mute { flex-shrink: 0; width: 28px; height: 28px; padding: 5px; border: 0; background: transparent; color: inherit; }
+/* Status controls use the same 24px row as the existing menu/close buttons. */
+.card-info { flex-wrap: nowrap; }
+.card-info :is(.card-menu, .card-close, .card-mute, .card-pin) {
+    box-sizing: border-box; flex-shrink: 0; height: 24px; min-height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.card-info :is(.card-mute, .card-pin) { width: 22px; min-width: 22px; padding: 0; border: 0; background: transparent; color: inherit; }
+.card-pin::before { content: ''; width: 16px; height: 16px; background: currentColor; mask: url('assets/icons/material/push_pin.svg') center / contain no-repeat; }
+@media (max-width: 600px) { .card-info :is(.card-mute, .card-pin) { width: 18px; min-width: 18px; } }
 .card-mute::before { content: ''; display: block; width: 18px; height: 18px; background: currentColor; mask: url('assets/icons/material/volume_off.svg') center / contain no-repeat; }
 #select-tabs-btn { display: flex; align-items: center; gap: 8px; }
 #select-tabs-btn .shortcut-hint { margin-inline-start: auto; white-space: nowrap; }

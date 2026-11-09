@@ -35,30 +35,6 @@ test('new-after and duplicate reject or ignore unrelated/private/grid targets', 
     const duplicated=[];f.api.tabs.duplicate=async id=>duplicated.push(id);
     await f.actions.duplicate([1,3,4]); assert.deepEqual(duplicated,[1]);
 });
-test('site sound requires permission, applies once per site, and reads the same state', async () => {
-    const f=fixture([{id:1,index:0,windowId:1},{id:2,index:1,windowId:1},{id:3,index:2,windowId:1,url:'https://other.example/a'}]);
-    let granted=false;f.api.permissions={contains:async()=>granted};
-    const rules=new Map(),calls=[];
-    f.api.contentSettings={sound:{get:async p=>({setting:rules.get(new URL(p.primaryUrl).origin)||'allow'}),set:async p=>{calls.push(p);rules.set(new URL(p.primaryPattern).origin,p.setting);}}};
-    assert.equal(await f.actions.siteSoundSnapshot([1]),null);
-    await assert.rejects(f.actions.setSiteSound([1],true),/permission/);
-    granted=true;
-    assert.deepEqual(await f.actions.setSiteSound([1,2,3],true),{count:2,error:null});
-    assert.equal(calls[0].scope,'regular'); assert.equal(calls[0].primaryPattern,'https://example.com/*');
-    assert.deepEqual(await f.actions.siteSoundSnapshot([1,3]),{muted:true});
-    await f.actions.setSiteSound([1],false);
-    assert.deepEqual(await f.actions.siteSoundSnapshot([1,3]),{muted:false});
-});
-test('site sound reports unsupported versions, partial failures, and private scope', async () => {
-    const f=fixture([{id:1,index:0,windowId:1,incognito:true},{id:2,index:1,windowId:1,incognito:true,url:'https://other.example/'},{id:3,index:2,windowId:1}]);
-    f.actions.private=true;f.api.permissions={contains:async()=>true};
-    await assert.rejects(f.actions.setSiteSound([1],true),/does not support/);
-    const calls=[];f.api.contentSettings={sound:{set:async p=>{calls.push(p);if(p.primaryPattern.includes('other'))throw Error('Denied');}}};
-    const result=await f.actions.setSiteSound([1,2,3],true);
-    assert.equal(result.count,1);assert.match(result.error,/1 site/);
-    assert.equal(calls.length,2);assert.ok(calls.every(p=>p.scope==='incognito_session_only'));
-});
-
 test('tall menus scroll without overlapping their opener, including near viewport edges', () => {
     for (const rect of [
         {left:370,right:420,top:402,bottom:438},

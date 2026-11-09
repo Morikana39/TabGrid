@@ -44,8 +44,7 @@
   "incognito": "split",
   "optional_permissions": [
     "bookmarks",
-    "readingList",
-    "contentSettings"
+    "readingList"
   ],
   "icons": {
     "16": "assets/icons/extension/icon-16.png",
