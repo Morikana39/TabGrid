@@ -24,6 +24,24 @@ A local Chrome extension that displays tab and tab group thumbnails in one visua
   <sub><em>Illustrative showcases, not exact screenshots.<a href="https://github.com/Morikana39/TabGrid/blob/main/docs/showcase-artwork.md">Artwork details</a>.</em></sub>
 </p>
 
+## See TabGrid in action
+
+### Search, filter, and sort
+
+![Search tabs, filter by playing audio, and sort by title](images/showcase/tabgrid-search-filter-sort.gif)
+
+### Drag to reorder and group
+
+![Drag tabs to reorder them, then create and name a tab group](images/showcase/tabgrid-drag-reorder-group.gif)
+
+### Customize the appearance
+
+![Choose Glassmorphism, add a custom background, scroll the grid, and switch to dark mode](images/showcase/tabgrid-appearance.gif)
+
+*Example background illustration in the appearance demo: [@\_rsef\_ (X.com)](https://x.com/_rsef_) · [Original artwork on Pixiv](https://www.pixiv.net/artworks/96102279).*
+
+These demos use sample tabs; the appearance demo includes a composited settings inset.
+
 ## Install
 
 Requires **Chrome 120 or later**. Visit [TabGrid’s official Chrome Web Store page](https://chromewebstore.google.com/detail/tabgrid/njanhklepohgnhaklnbijfmlclmjiahp) in Chrome and click **Add to Chrome**.

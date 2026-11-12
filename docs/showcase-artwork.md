@@ -19,3 +19,9 @@ Text verbatim outside the app: 'TabGrid' small; 'Your tabs. One clear view.' lar
 Color palette: off-white, ink charcoal, restrained cornflower blue and sage group accents; match the real UI. No neon, no exaggerated 3D, no extra feature badges, no fabricated cloud/AI/sidebar features. Make the app itself legible.
 ```
 
+
+## Animated interface demos
+
+The three `tabgrid-*.gif` files in `images/showcase/` capture the local TabGrid UI fixture with sample tabs. They demonstrate search/filter/sort, drag-to-reorder/group, and appearance customization. Cursor and camera motion are edited for presentation; the appearance demo includes a composited right-half settings inset. They are not recordings of an installed extension browsing personal tabs.
+
+The example background illustration in `tabgrid-appearance.gif` is by [@\_rsef\_ (X.com)](https://x.com/_rsef_): [original artwork on Pixiv](https://www.pixiv.net/artworks/96102279). The illustration remains the work of its credited artist; TabGrid's MIT license does not apply to it.

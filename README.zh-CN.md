@@ -22,6 +22,24 @@
   <sub><em>示意展示图，并非精确截图。<a href="https://github.com/Morikana39/TabGrid/blob/main/docs/showcase-artwork.md">图片说明</a>.</em></sub>
 </p>
 
+## See TabGrid in action
+
+### Search, filter, and sort
+
+![Search tabs, filter by playing audio, and sort by title](images/showcase/tabgrid-search-filter-sort.gif)
+
+### Drag to reorder and group
+
+![Drag tabs to reorder them, then create and name a tab group](images/showcase/tabgrid-drag-reorder-group.gif)
+
+### Customize the appearance
+
+![Choose Glassmorphism, add a custom background, scroll the grid, and switch to dark mode](images/showcase/tabgrid-appearance.gif)
+
+*Example background illustration in the appearance demo: [@\_rsef\_ (X.com)](https://x.com/_rsef_) · [Original artwork on Pixiv](https://www.pixiv.net/artworks/96102279).*
+
+These demos use sample tabs; the appearance demo includes a composited settings inset.
+
 ## 安装
 
 需要 **Chrome 120 或更新版本**。在 Chrome 中访问 [TabGrid 的 Chrome 应用商店官方页面](https://chromewebstore.google.com/detail/tabgrid/njanhklepohgnhaklnbijfmlclmjiahp)，点击**添加至 Chrome**。
